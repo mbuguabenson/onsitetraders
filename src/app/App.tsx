@@ -53,9 +53,6 @@ const router = createBrowserRouter(
             {/* All child routes will be passed as children to Layout */}
             <Route index element={<AppRoot />} />
             <Route path='endpoint' element={<Endpoint />} />
-            <Route path='callback' element={<CallbackPage />} />
-            <Route path='auth/callback' element={<CallbackPage />} />
-            <Route path='legacy/callback' element={<CallbackPage />} />
         </Route>
     ),
     {

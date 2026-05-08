@@ -229,36 +229,33 @@ class APIBase {
     }
 
     async fetchOTPForAccount(accountId: string, token: string): Promise<string> {
-        console.log(`[API] Fetching OTP for account: ${accountId} using token: ${token.substring(0, 5)}...`);
+        console.log(`[API] Fetching OTP for account: ${accountId}...`);
         try {
             const response = await fetch(`https://api.derivws.com/trading/v1/options/accounts/${accountId}/otp`, {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${token}`,
-                    'Deriv-App-ID': String(getAppId()),
+                    // Note: Deriv-App-ID is intentionally omitted here as per official template
                 },
             });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                console.error('[API] OTP Fetch HTTP Error:', {
-                    status: response.status,
-                    accountId,
-                    error: errorData
-                });
                 throw new Error(errorData.error_description || errorData.error || `HTTP ${response.status}`);
             }
 
-            const data = await response.json();
-            console.log('[API] OTP Response received:', data);
+            const json = await response.json();
+            console.log('[API] OTP Raw Response:', json);
             
-            if (data.error) {
-                console.error('[API] OTP Data Error:', data.error);
-                throw new Error(data.error_description || data.error);
+            // Official template uses json.data.url
+            const otpUrl = json?.data?.url || json?.url;
+            
+            if (!otpUrl) {
+                throw new Error('OTP URL not found in server response');
             }
-            return data.url;
+            return otpUrl;
         } catch (e: any) {
-            console.error('[API] OTP Fetch Exception:', e.message);
+            console.error('[API] OTP Fetch Failed:', e.message);
             throw e;
         }
     }

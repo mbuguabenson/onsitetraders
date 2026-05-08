@@ -229,17 +229,38 @@ class APIBase {
     }
 
     async fetchOTPForAccount(accountId: string, token: string): Promise<string> {
-        const response = await fetch(`https://api.derivws.com/trading/v1/options/accounts/${accountId}/otp`, {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${token}`,
-                'Deriv-App-ID': String(getAppId()),
-            },
-        });
+        console.log(`[API] Fetching OTP for account: ${accountId} using token: ${token.substring(0, 5)}...`);
+        try {
+            const response = await fetch(`https://api.derivws.com/trading/v1/options/accounts/${accountId}/otp`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Deriv-App-ID': String(getAppId()),
+                },
+            });
 
-        const data = await response.json();
-        if (data.error) throw new Error(data.error_description || data.error);
-        return data.url;
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error('[API] OTP Fetch HTTP Error:', {
+                    status: response.status,
+                    accountId,
+                    error: errorData
+                });
+                throw new Error(errorData.error_description || errorData.error || `HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('[API] OTP Response received:', data);
+            
+            if (data.error) {
+                console.error('[API] OTP Data Error:', data.error);
+                throw new Error(data.error_description || data.error);
+            }
+            return data.url;
+        } catch (e: any) {
+            console.error('[API] OTP Fetch Exception:', e.message);
+            throw e;
+        }
     }
 
     wrapSocket(socket: WebSocket): TApiBaseApi {

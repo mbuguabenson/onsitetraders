@@ -109,7 +109,6 @@ const CallbackPage = observer(() => {
                     const accountsResponse = await fetch('https://api.derivws.com/trading/v1/options/accounts', {
                         headers: {
                             Authorization: `Bearer ${data.access_token}`,
-                            'Deriv-App-ID': String(getAppId()),
                         },
                     });
                     const accountsData = await accountsResponse.json();

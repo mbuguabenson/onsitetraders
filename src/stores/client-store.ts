@@ -51,7 +51,7 @@ export default class ClientStore {
         this.balanceSubscription = api_base.api.onMessage().subscribe(({ data }: any) => {
             if (data?.msg_type === 'balance') {
                 console.log('[ClientStore] Balance update received:', data.balance);
-                this.setBalance(data.balance.balance);
+                this.setBalance(String(data.balance.balance));
                 this.setCurrency(data.balance.currency);
                 this.setAllAccountsBalance(data.balance.accounts);
             }

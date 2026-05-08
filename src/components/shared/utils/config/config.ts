@@ -3,7 +3,18 @@ import { generatePKCE, generateState, storePKCEState } from '@/utils/pkce';
 
 export const DERIV_NEW_AUTH_URL = 'https://auth.deriv.com/oauth2/auth';
 export const DERIV_NEW_TOKEN_URL = 'https://auth.deriv.com/oauth2/token';
-export const API_MODE: 'legacy' | 'new' = 'new';
+export const getApiMode = (): 'legacy' | 'new' => {
+    // Priority 1: Check for new OIDC tokens
+    if (localStorage.getItem('new_api_access_token')) return 'new';
+    
+    // Priority 2: Check for legacy tokens
+    if (localStorage.getItem('authToken')) return 'legacy';
+    
+    // Default to 'new' for new login attempts
+    return 'new';
+};
+
+export const API_MODE = getApiMode();
 
 export const APP_IDS = {
     LOCALHOST: 36300,
@@ -29,9 +40,9 @@ export const domain_app_ids = {
     'dbot.deriv.com': APP_IDS.PRODUCTION,
     'dbot.deriv.be': APP_IDS.PRODUCTION_BE,
     'dbot.deriv.me': APP_IDS.PRODUCTION_ME,
-    '22-dec.vercel.app': APP_IDS.VERCEL,
-    'profithubtool.vercel.app': '121856',
-    'onsitetraders.vercel.app': '121856',
+    '22-dec.vercel.app': APP_IDS.PRODUCTION,
+    'profithubtool.vercel.app': APP_IDS.PRODUCTION,
+    'onsitetraders.vercel.app': APP_IDS.PRODUCTION,
 };
 
 export const getClientId = () => {
@@ -162,8 +173,9 @@ export const getDebugServiceWorker = () => {
 const legacyGenerateOAuthURL = () => {
     const is_local = isLocal();
     const app_id = is_local ? APP_IDS.LOCALHOST : getAppId();
-    // Remove redirect=home to prevent redirecting to Deriv's official dashboard
-    const login_url = `https://oauth.deriv.com/oauth2/authorize?app_id=${app_id}&brand=deriv&state=`;
+    // Use the current origin as redirect_uri to prevent Deriv from redirecting to their home page
+    const redirect_uri = window.location.origin;
+    const login_url = `https://oauth.deriv.com/oauth2/authorize?app_id=${app_id}&brand=deriv&redirect_uri=${encodeURIComponent(redirect_uri)}&state=`;
  
     console.log('[Config] Generated Legacy OAuth URL:', login_url);
     return login_url;
@@ -188,10 +200,9 @@ const newGenerateOAuthURL = async () => {
 };
 
 
-export const generateOAuthURL = async () => {
-    if (API_MODE === 'new') {
+export const generateOAuthURL = async (mode = API_MODE) => {
+    if (mode === 'new') {
         return newGenerateOAuthURL();
     }
     return legacyGenerateOAuthURL();
 };
-

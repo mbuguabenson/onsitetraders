@@ -139,7 +139,7 @@ const AppHeader = observer(({ isAuthenticating }: TAppHeaderProps) => {
                         onClick={async () => {
                             clearAuthData(false);
                             try {
-                                window.location.assign(await generateOAuthURL('legacy'));
+                                window.location.assign(await generateOAuthURL('new'));
                             } catch (error) {
                                 console.error(error);
                             }

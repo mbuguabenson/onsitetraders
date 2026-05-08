@@ -69,11 +69,18 @@ export default class ClientStore {
     constructor() {
         this.authDataSubscription = authData$.subscribe(authData => {
             if (authData) {
+                console.log('[ClientStore] Syncing authData:', {
+                    loginid: authData.loginid,
+                    balance: authData.balance,
+                    currency: authData.currency
+                });
                 this.setLoginId(authData.loginid);
                 this.setIsLoggedIn(true);
                 this.setAccountList(authData.account_list);
-                if (authData.balance !== undefined) {
-                    this.setBalance(authData.balance);
+                
+                // Prioritize balance from authData (New API)
+                if (authData.balance !== undefined && authData.balance !== null) {
+                    this.setBalance(String(authData.balance));
                 }
                 if (authData.currency) {
                     this.setCurrency(authData.currency);

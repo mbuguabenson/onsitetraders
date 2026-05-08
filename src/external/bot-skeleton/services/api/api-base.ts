@@ -199,23 +199,37 @@ class APIBase {
                     const accounts = JSON.parse(localStorage.getItem('new_api_accounts_list') || '[]');
                     const activeAccount = accounts.find((a: any) => a.account_id === accountId) || accounts[0];
                     
-                    const authData = {
-                        loginid: accountId,
-                        account_list: accounts.map((a: any) => ({
-                            loginid: a.account_id,
-                            currency: a.currency,
-                            is_virtual: a.account_type === 'demo',
-                        })),
-                        balance: 0, // Will be updated by subscription
-                        currency: activeAccount?.currency || 'USD',
+                    const updateAuthData = (balance: number) => {
+                        const authData = {
+                            loginid: accountId,
+                            account_list: accounts.map((a: any) => ({
+                                loginid: a.account_id,
+                                currency: a.currency,
+                                is_virtual: a.account_type === 'demo',
+                            })),
+                            balance: balance,
+                            currency: activeAccount?.currency || 'USD',
+                        };
+
+                        this.account_info = authData;
+                        this.account_id = accountId;
+                        this.token = token;
+
+                        setAccountList(authData.account_list);
+                        setAuthData(authData as any);
                     };
 
-                    this.account_info = authData;
-                    this.account_id = accountId;
-                    this.token = token;
+                    // Initial broadcast
+                    updateAuthData(0);
 
-                    setAccountList(authData.account_list);
-                    setAuthData(authData as any);
+                    // Listen for real-time balance updates
+                    this.tradingApi?.onMessage().subscribe(({ data }: any) => {
+                        if (data?.msg_type === 'balance') {
+                            console.log('[API] New API Balance Update:', data.balance.balance);
+                            updateAuthData(data.balance.balance);
+                        }
+                    });
+
                     setIsAuthorized(true);
                     this.is_authorized = true;
                     this.subscribe();

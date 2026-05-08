@@ -278,34 +278,40 @@ class APIBase {
             }
         });
 
+        const send = async (data: any) => {
+            if (socket.readyState === WebSocket.CONNECTING) {
+                await new Promise(resolve => socket.addEventListener('open', resolve, { once: true }));
+            }
+            if (socket.readyState === WebSocket.OPEN) {
+                const req_id = data.req_id || ++req_id_counter;
+                const request_data = { ...data, req_id };
+                
+                return new Promise((resolve, reject) => {
+                    response_promises.set(req_id, { resolve, reject });
+                    socket.send(JSON.stringify(request_data));
+                    
+                    // Timeout for safety
+                    setTimeout(() => {
+                        if (response_promises.has(req_id)) {
+                            response_promises.delete(req_id);
+                            reject(new Error(`[API] Request timeout: ${req_id}`));
+                        }
+                    }, 30000);
+                });
+            } else {
+                throw new Error('[API] Cannot send message: Socket is not open');
+            }
+        };
+
         return {
             connection: socket as any,
-            send: async (data: any) => {
-                if (socket.readyState === WebSocket.CONNECTING) {
-                    await new Promise(resolve => socket.addEventListener('open', resolve, { once: true }));
-                }
-                if (socket.readyState === WebSocket.OPEN) {
-                    const req_id = data.req_id || ++req_id_counter;
-                    const request_data = { ...data, req_id };
-                    
-                    return new Promise((resolve, reject) => {
-                        response_promises.set(req_id, { resolve, reject });
-                        socket.send(JSON.stringify(request_data));
-                        
-                        // Timeout for safety
-                        setTimeout(() => {
-                            if (response_promises.has(req_id)) {
-                                response_promises.delete(req_id);
-                                reject(new Error(`[API] Request timeout: ${req_id}`));
-                            }
-                        }, 30000);
-                    });
-                } else {
-                    throw new Error('[API] Cannot send message: Socket is not open');
-                }
-            },
+            send,
             disconnect: () => socket.close(),
-            getSelfExclusion: async () => ({}),
+            // Stub/Forward standard methods expected by the app
+            authorize: (token: string) => send({ authorize: token }),
+            getSettings: () => send({ get_settings: 1 }),
+            getAccountStatus: () => send({ get_account_status: 1 }),
+            getSelfExclusion: () => send({ get_self_exclusion: 1 }),
             onMessage: () => ({
                 subscribe: (callback: (msg: any) => void) => {
                     const listener = (event: MessageEvent) => {

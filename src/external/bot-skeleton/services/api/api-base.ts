@@ -206,6 +206,7 @@ class APIBase {
                                 loginid: a.account_id,
                                 currency: a.currency,
                                 is_virtual: a.account_type === 'demo',
+                                balance: a.balance,
                             })),
                             balance: balance,
                             currency: activeAccount?.currency || 'USD',
@@ -219,8 +220,9 @@ class APIBase {
                         setAuthData(authData as any);
                     };
 
-                    // Initial broadcast
-                    updateAuthData(0);
+                    // Initial broadcast using balance from account list (instantly shows real balance)
+                    const initialBalance = activeAccount ? Number(activeAccount.balance) : 0;
+                    updateAuthData(isNaN(initialBalance) ? 0 : initialBalance);
 
                     // Listen for real-time balance updates
                     this.tradingApi?.onMessage().subscribe(({ data }: any) => {

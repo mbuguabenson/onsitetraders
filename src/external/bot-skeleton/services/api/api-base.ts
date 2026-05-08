@@ -194,6 +194,28 @@ class APIBase {
 
                 this.tradingApi?.connection.addEventListener('open', () => {
                     console.log('[API] Trading WebSocket Connected (Pre-authorized)');
+                    
+                    // Sync with global auth stream so stores (like ClientStore) update
+                    const accounts = JSON.parse(localStorage.getItem('new_api_accounts_list') || '[]');
+                    const activeAccount = accounts.find((a: any) => a.account_id === accountId) || accounts[0];
+                    
+                    const authData = {
+                        loginid: accountId,
+                        account_list: accounts.map((a: any) => ({
+                            loginid: a.account_id,
+                            currency: a.currency,
+                            is_virtual: a.account_type === 'demo',
+                        })),
+                        balance: 0, // Will be updated by subscription
+                        currency: activeAccount?.currency || 'USD',
+                    };
+
+                    this.account_info = authData;
+                    this.account_id = accountId;
+                    this.token = token;
+
+                    setAccountList(authData.account_list);
+                    setAuthData(authData as any);
                     setIsAuthorized(true);
                     this.is_authorized = true;
                     this.subscribe();

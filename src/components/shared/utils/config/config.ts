@@ -162,11 +162,13 @@ export const getDebugServiceWorker = () => {
 const legacyGenerateOAuthURL = () => {
     const is_local = isLocal();
     const app_id = is_local ? APP_IDS.LOCALHOST : getAppId();
-    const login_url = `https://oauth.deriv.com/oauth2/authorize?app_id=${app_id}&brand=deriv&redirect=home&state=`;
+    // Remove redirect=home to prevent redirecting to Deriv's official dashboard
+    const login_url = `https://oauth.deriv.com/oauth2/authorize?app_id=${app_id}&brand=deriv&state=`;
  
     console.log('[Config] Generated Legacy OAuth URL:', login_url);
     return login_url;
 };
+
 
 const newGenerateOAuthURL = async () => {
     const client_id = getClientId();

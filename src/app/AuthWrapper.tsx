@@ -66,7 +66,7 @@ export const AuthWrapper = () => {
                                     grant_type: 'authorization_code',
                                     code,
                                     client_id: getClientId(),
-                                    redirect_uri: `${window.location.origin}/`,
+                                    redirect_uri: `${window.location.origin}/callback`,
                                     code_verifier: verifier,
                                 }),
                             });
@@ -124,7 +124,16 @@ export const AuthWrapper = () => {
             setIsAuthComplete(true);
         }
 
-        initializeAuth();
+        let stopRefresh: (() => void) | null = null;
+        
+        initializeAuth().then(async () => {
+            const { startTokenRefreshTimer } = await import('@/utils/auth-service');
+            stopRefresh = startTokenRefreshTimer();
+        });
+
+        return () => {
+            if (stopRefresh) stopRefresh();
+        };
     }, [loginInfo, paramsToDelete, isOnline]);
 
     // Add timeout for offline scenarios to prevent infinite loading

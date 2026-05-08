@@ -33,7 +33,8 @@ const RouteWithSubRoutes = (route: TRouteWithSubRoutesProps) => {
             }
             result = <Redirect to={to} />;
         } else if (is_valid_route && route.is_authenticated && !route.is_logging_in && !route.is_logged_in) {
-            redirectToLogin(route.is_logged_in, getLanguage());
+            // redirectToLogin(route.is_logged_in, getLanguage());
+            result = <Redirect to='/' />;
         } else {
             const default_subroute = route.routes ? route.routes.find(r => r.default) : {};
             const has_default_subroute = !isEmptyObject(default_subroute);

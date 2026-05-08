@@ -258,7 +258,7 @@ export default class AppStore {
                             (b.isDescendantOf('trade_definition_multiplier') && b.category_ === 'trade_parameters')
                     );
 
-                trade_options_blocks.forEach(trade_options_block => setCurrency(trade_options_block));
+                trade_options_blocks.forEach((trade_options_block: any) => setCurrency(trade_options_block));
             }
         );
     };
@@ -271,7 +271,7 @@ export default class AppStore {
                 this.api_helpers_store = {
                     server_time: this.root_store.common.server_time,
                     ws: api_base.api,
-                    ticks_service: ApiHelpers?.instance?.ticks_service,
+                    ticks_service: (ApiHelpers?.instance as any)?.ticks_service,
                 };
 
                 if (!ApiHelpers?.instance) {
@@ -280,13 +280,13 @@ export default class AppStore {
 
                 this.api_helpers_store = {
                     ...this.api_helpers_store,
-                    ticks_service: ApiHelpers?.instance?.ticks_service,
+                    ticks_service: (ApiHelpers?.instance as any)?.ticks_service,
                 };
 
                 this.showDigitalOptionsMaltainvestError();
 
-                const active_symbols = ApiHelpers?.instance?.active_symbols;
-                const contracts_for = ApiHelpers?.instance?.contracts_for;
+                const active_symbols = (ApiHelpers?.instance as any)?.active_symbols;
+                const contracts_for = (ApiHelpers?.instance as any)?.contracts_for;
 
                 if (ApiHelpers?.instance && active_symbols && contracts_for) {
                     if ((window as any).Blockly?.derivWorkspace) {
@@ -305,7 +305,8 @@ export default class AppStore {
                     }
                     DBot.initializeInterpreter();
                 }
-            }
+            },
+            { fireImmediately: true }
         );
     };
 
@@ -364,7 +365,7 @@ export default class AppStore {
         this.api_helpers_store = {
             server_time: common.server_time,
             ws: api_base.api,
-            ticks_service: ApiHelpers.instance?.ticks_service,
+            ticks_service: (ApiHelpers.instance as any)?.ticks_service,
         };
     };
 

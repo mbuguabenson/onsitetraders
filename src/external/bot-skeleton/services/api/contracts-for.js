@@ -197,7 +197,13 @@ export default class ContractsFor {
             }
 
             this.retrieving_contracts_for[symbol] = new PendingPromise();
-            const response = await api_base.api.send({ contracts_for: symbol });
+            let response;
+            try {
+                response = await api_base.api.send({ contracts_for: symbol });
+            } catch (error) {
+                console.error(`[ContractsFor] Error fetching contracts for ${symbol}:`, error);
+                return [];
+            }
 
             if (response.error) {
                 return [];

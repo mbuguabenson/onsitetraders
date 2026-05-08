@@ -184,7 +184,7 @@ const legacyGenerateOAuthURL = () => {
 
 const newGenerateOAuthURL = async () => {
     const client_id = getClientId();
-    const redirect_uri = `${window.location.origin}/`;
+    const redirect_uri = `${window.location.origin}/callback`;
     
     // Generate PKCE
     const { code_verifier, code_challenge } = await generatePKCE();

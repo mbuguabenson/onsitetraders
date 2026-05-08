@@ -60,7 +60,7 @@ const DemoToRealSection = observer(() => {
                 <div className='connection-info'>
                     <div className='info-row'>
                         <span className='label'>Demo Account:</span>
-                        <span className='value'>{client.loginid || 'Not connected'}</span>
+                        <span className='value'>{client.loginid || 'Not logged in'}</span>
                     </div>
                     <div className='info-row'>
                         <span className='label'>Account Type:</span>

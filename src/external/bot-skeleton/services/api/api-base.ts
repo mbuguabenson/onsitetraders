@@ -163,7 +163,12 @@ class APIBase {
 
             this.publicApi?.connection.addEventListener('open', () => {
                 console.log('[API] Public WebSocket Connected');
+                this.onsocketopen();
                 this.getActiveSymbols();
+            });
+            this.publicApi?.connection.addEventListener('close', () => {
+                console.log('[API] Public WebSocket Closed');
+                this.onsocketclose();
             });
         }
 
@@ -194,6 +199,7 @@ class APIBase {
 
                 this.tradingApi?.connection.addEventListener('open', () => {
                     console.log('[API] Trading WebSocket Connected (Pre-authorized)');
+                    this.onsocketopen();
                     
                     // Sync with global auth stream so stores (like ClientStore) update
                     const accounts = JSON.parse(localStorage.getItem('new_api_accounts_list') || '[]');
@@ -226,7 +232,7 @@ class APIBase {
 
                     // Listen for real-time balance updates
                     this.tradingApi?.onMessage().subscribe(({ data }: any) => {
-                        if (data?.msg_type === 'balance') {
+                        if (data?.msg_type === 'balance' && data.balance) {
                             console.log('[API] New API Balance Update:', data.balance.balance);
                             updateAuthData(data.balance.balance);
                         }
@@ -236,8 +242,16 @@ class APIBase {
                     this.is_authorized = true;
                     this.subscribe();
                 });
-            } catch (e) {
+                this.tradingApi?.connection.addEventListener('close', () => {
+                    console.log('[API] Trading WebSocket Closed');
+                    this.onsocketclose();
+                });
+            } catch (e: any) {
                 console.error('[API] Failed to initialize Trading WS:', e);
+                this.common_store?.setError(true, {
+                    message: `Trading session failed: ${e.message}. Please try re-logging.`,
+                    header: 'Authentication Error',
+                });
             } finally {
                 setIsAuthorizing(false);
             }
@@ -285,9 +299,11 @@ class APIBase {
                 const data = JSON.parse(event.data);
                 const req_id = data.req_id;
                 if (req_id && response_promises.has(req_id)) {
-                    const { resolve } = response_promises.get(req_id)!;
+                    const { resolve, reject } = response_promises.get(req_id)!;
                     response_promises.delete(req_id);
-                    resolve(data);
+                    if (data.msg_type === 'contracts_for') console.log('[API] Received contracts_for response:', data);
+                    if (data.error) reject(data);
+                    else resolve(data);
                 }
             } catch (e) {
                 // Ignore parse errors here, handled in onMessage
@@ -304,6 +320,7 @@ class APIBase {
                 
                 return new Promise((resolve, reject) => {
                     response_promises.set(req_id, { resolve, reject });
+                    if (data.contracts_for) console.log(`[API] Requesting contracts_for: ${data.contracts_for}`);
                     socket.send(JSON.stringify(request_data));
                     
                     // Timeout for safety
@@ -323,11 +340,8 @@ class APIBase {
             connection: socket as any,
             send,
             disconnect: () => socket.close(),
-            // Stub/Forward standard methods expected by the app
+            // Forward standard methods expected by the app
             authorize: (token: string) => send({ authorize: token }),
-            getSettings: () => send({ get_settings: 1 }),
-            getAccountStatus: () => send({ get_account_status: 1 }),
-            getSelfExclusion: () => send({ get_self_exclusion: 1 }),
             onMessage: () => ({
                 subscribe: (callback: (msg: any) => void) => {
                     const listener = (event: MessageEvent) => {
@@ -344,6 +358,19 @@ class APIBase {
                     };
                 },
             }),
+            // Missing methods for CoreStoreProvider and others
+            time: () => send({ time: 1 }),
+            websiteStatus: () => send({ website_status: 1 }),
+            landingCompany: (data: any) => send({ landing_company: data.landing_company }),
+            activeSymbols: (data: any) => send({ active_symbols: data.active_symbols || 'brief' }),
+            contractsFor: (symbol: string) => send({ contracts_for: symbol }),
+            getFinancialAssessment: () => send({ get_financial_assessment: 1 }),
+            getResidenceList: () => send({ residence_list: 1 }),
+            getAccountStatus: () => send({ get_account_status: 1 }),
+            getSelfExclusion: () => send({ get_self_exclusion: 1 }),
+            getSettings: () => send({ get_settings: 1 }),
+            setSettings: (data: any) => send({ set_settings: 1, ...data }),
+            tncApproval: () => send({ tnc_approval: 1 }),
         } as any;
     }
 

@@ -145,7 +145,7 @@ const AppHeader = observer(({ isAuthenticating }: TAppHeaderProps) => {
                             }
                         }}
                     >
-                        <Localize i18n_default_text='Connect' />
+                        <Localize i18n_default_text='Login' />
                     </Button>
                     {!isDesktop && (
                         <Button

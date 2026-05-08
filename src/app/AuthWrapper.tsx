@@ -66,7 +66,7 @@ export const AuthWrapper = () => {
                                     grant_type: 'authorization_code',
                                     code,
                                     client_id: getClientId(),
-                                    redirect_uri: window.location.origin,
+                                    redirect_uri: `${window.location.origin}/`,
                                     code_verifier: verifier,
                                 }),
                             });

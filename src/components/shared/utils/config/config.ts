@@ -179,7 +179,7 @@ const newGenerateOAuthURL = async () => {
     // Store for callback
     storePKCEState(code_verifier, state);
     
-    const login_url = `${DERIV_NEW_AUTH_URL}?client_id=${client_id}&redirect_uri=${redirect_uri}&response_type=code&scope=admin+read+trade+payments&state=${state}&code_challenge=${code_challenge}&code_challenge_method=S256`;
+    const login_url = `${DERIV_NEW_AUTH_URL}?client_id=${client_id}&redirect_uri=${redirect_uri}&response_type=code&scope=read+trade+payments&state=${state}&code_challenge=${code_challenge}&code_challenge_method=S256`;
 
     console.log('[Config] Generated New OIDC URL with PKCE:', login_url);
     return login_url;

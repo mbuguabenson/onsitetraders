@@ -60,12 +60,16 @@ export const storePKCEState = (verifier: string, state: string) => {
 };
 
 /**
- * Retrieves and clears the PKCE verifier from SessionStorage
+ * Retrieves the PKCE verifier from SessionStorage
  */
 export const popPKCEVerifier = () => {
     const verifier = sessionStorage.getItem('pkce_code_verifier');
-    sessionStorage.removeItem('pkce_code_verifier');
+    // Note: We don't remove it here to allow for React 18 double-render resiliency
     return verifier;
+};
+
+export const clearPKCEVerifier = () => {
+    sessionStorage.removeItem('pkce_code_verifier');
 };
 
 /**

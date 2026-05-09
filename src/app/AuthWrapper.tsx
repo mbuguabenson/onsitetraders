@@ -53,7 +53,7 @@ export const AuthWrapper = () => {
                 // 1. Handle OIDC Code Exchange if present in URL
                 if (code && state) {
                     console.log('[AuthWrapper] OIDC code detected, exchanging...');
-                    const { validatePKCEState, popPKCEVerifier } = await import('@/utils/pkce');
+                    const { validatePKCEState, popPKCEVerifier, clearPKCEVerifier } = await import('@/utils/pkce');
                     const { getClientId, DERIV_NEW_TOKEN_URL, getAppId } = await import('@/components/shared/utils/config/config');
                     
                     if (validatePKCEState(state)) {
@@ -84,7 +84,31 @@ export const AuthWrapper = () => {
                                 if (accountsData.data?.length > 0) {
                                     localStorage.setItem('new_api_accounts_list', JSON.stringify(accountsData.data));
                                     localStorage.setItem('new_api_account_id', accountsData.data[0].account_id);
+                                    
+                                    // Populate legacy keys for backward compatibility (ClientStore, App.tsx, etc.)
+                                    const accountsList: Record<string, string> = {};
+                                    const clientAccounts: Record<string, any> = {};
+                                    
+                                    accountsData.data.forEach((acc: any) => {
+                                        // For OIDC, we reuse the same token for all accounts in the legacy format
+                                        accountsList[acc.account_id] = data.access_token;
+                                        clientAccounts[acc.account_id] = {
+                                            loginid: acc.account_id,
+                                            token: data.access_token,
+                                            currency: acc.currency || 'USD',
+                                            balance: acc.balance || 0,
+                                            is_virtual: acc.account_type === 'demo' ? 1 : 0
+                                        };
+                                    });
+                                    
+                                    localStorage.setItem('accountsList', JSON.stringify(accountsList));
+                                    localStorage.setItem('clientAccounts', JSON.stringify(clientAccounts));
+                                    localStorage.setItem('authToken', data.access_token);
+                                    localStorage.setItem('active_loginid', accountsData.data[0].account_id);
+                                    localStorage.setItem('account_type', accountsData.data[0].account_type === 'demo' ? 'demo' : 'real');
                                 }
+                                
+                                clearPKCEVerifier();
                                 
                                 // Clean URL
                                 window.history.replaceState({}, document.title, window.location.origin);

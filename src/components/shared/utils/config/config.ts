@@ -1,7 +1,5 @@
 import { isStaging } from '../url/helpers';
 import { generatePKCE, generateState, storePKCEState } from '@/utils/pkce';
-import brandConfig from '../../../../../brand.config.json';
-
 export const DERIV_NEW_AUTH_URL = 'https://auth.deriv.com/oauth2/auth';
 export const DERIV_NEW_TOKEN_URL = 'https://auth.deriv.com/oauth2/token';
 export const getApiMode = (): 'legacy' | 'new' => {

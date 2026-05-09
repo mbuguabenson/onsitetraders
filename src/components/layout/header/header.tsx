@@ -148,7 +148,7 @@ const AppHeader = observer(({ isAuthenticating: isInitialAuthenticating }: { isA
                         </div>
                     );
                 } else if (position === 'right') {
-                    // For right section - transfer button (and account switcher on desktop)
+                    // For right section - transfer + logout buttons (and account switcher on desktop)
                     return (
                         <div className='auth-actions'>
                             {isDesktop && (
@@ -162,6 +162,14 @@ const AppHeader = observer(({ isAuthenticating: isInitialAuthenticating }: { isA
                                 onClick={handleTransfer}
                             >
                                 <Localize i18n_default_text='Transfer' />
+                            </Button>
+                            <Button
+                                secondary
+                                disabled={client?.is_logging_out}
+                                onClick={handleLogout}
+                                id='header-logout-btn'
+                            >
+                                <Localize i18n_default_text='Logout' />
                             </Button>
                         </div>
                     );
@@ -224,6 +232,7 @@ const AppHeader = observer(({ isAuthenticating: isInitialAuthenticating }: { isA
             handleLogin,
             handleSignup,
             handleTransfer,
+            handleLogout,
         ]
     );
 

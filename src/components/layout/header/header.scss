@@ -264,6 +264,23 @@
         border-radius: 16px;
     }
 
+    // Logout button — red-outline style to distinguish from primary actions
+    #header-logout-btn {
+        border-color: #d63031;
+        color: #d63031;
+
+        &:hover:not(:disabled) {
+            background-color: rgba(214, 48, 49, 0.08);
+            border-color: #c0392b;
+            color: #c0392b;
+        }
+
+        &:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+    }
+
     &--loading {
         align-items: center;
         margin-inline-end: 1.6rem;

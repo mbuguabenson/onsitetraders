@@ -73,8 +73,10 @@ export default class OverUnderStore {
 
     @action
     private fetchActiveSymbols() {
-        if (!api_base.api) return;
-        api_base.api.send({ active_symbols: 'brief' }).then((res: any) => {
+        // Use marketApi (public v3 WS) — always available, even before login
+        const market_api = api_base.marketApi || api_base.api;
+        if (!market_api) return;
+        market_api.send({ active_symbols: 'brief' }).then((res: any) => {
             if (res.active_symbols) {
                 const filtered = res.active_symbols
                     .filter((s: any) => s.market === 'synthetic_index' && s.submarket === 'random_index')

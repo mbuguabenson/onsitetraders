@@ -148,8 +148,10 @@ export default class FreeBotsStore {
     @action
     fetchMarkets = async () => {
         try {
-            if (!api_base.api) return;
-            const res = await api_base.api.send({ active_symbols: 'brief' });
+            // Use marketApi (public v3 WS) — always available before login too
+            const market_api = api_base.marketApi || api_base.api;
+            if (!market_api) return;
+            const res = await market_api.send({ active_symbols: 'brief' });
             if (res?.active_symbols?.length) {
                 const groups: Record<string, { group: string; items: { value: string; label: string }[] }> = {};
                 res.active_symbols.forEach((s: any) => {

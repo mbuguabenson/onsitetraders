@@ -810,8 +810,10 @@ export default class SmartTradingStore {
     fetchMarkets = async () => {
         let symbols: any[] = [];
         try {
-            if (api_base.api) {
-                const response = await api_base.api.send({ active_symbols: 'brief' });
+            // Use marketApi (public v3 WS) — always available, even before login
+            const market_api = api_base.marketApi || api_base.api;
+            if (market_api) {
+                const response = await market_api.send({ active_symbols: 'brief' });
                 if (response.active_symbols && response.active_symbols.length > 0) {
                     symbols = response.active_symbols;
                 }

@@ -23,10 +23,7 @@ export const generateUrlWithRedirect = (path: string): string => {
         }
 
         // Append app_id from env so downstream services can identify the caller
-        const appId =
-            (typeof VITE_APP_ID !== 'undefined' ? (VITE_APP_ID as string) : null) ||
-            process.env.VITE_APP_ID ||
-            '';
+        const appId = process.env.VITE_APP_ID || '';
         if (appId) {
             url.searchParams.set('app_id', appId);
         }

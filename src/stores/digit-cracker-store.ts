@@ -115,7 +115,9 @@ export default class DigitCrackerStore {
     @action
     private waitForApiAndConnect = () => {
         const tryConnect = () => {
-            if (api_base.api) {
+            // Use marketApi (public v3 WS) — it is always available before login
+            const ready_api = api_base.marketApi || api_base.api;
+            if (ready_api) {
                 runInAction(() => {
                     this.is_connected = true;
                 });
@@ -132,8 +134,10 @@ export default class DigitCrackerStore {
     fetchMarkets = async () => {
         let symbols: any[] = [];
         try {
-            if (api_base.api) {
-                const response = await api_base.api.send({ active_symbols: 'brief' });
+            // Use marketApi (public v3 WS) — always available, even before login
+            const market_api = api_base.marketApi || api_base.api;
+            if (market_api) {
+                const response = await market_api.send({ active_symbols: 'brief' });
                 if (response?.active_symbols && Array.isArray(response.active_symbols)) {
                     symbols = response.active_symbols;
                 }

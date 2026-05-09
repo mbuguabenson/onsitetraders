@@ -5,16 +5,15 @@ import brandConfig from '../../../../../brand.config.json';
 export const DERIV_NEW_AUTH_URL = 'https://auth.deriv.com/oauth2/auth';
 export const DERIV_NEW_TOKEN_URL = 'https://auth.deriv.com/oauth2/token';
 export const getApiMode = (): 'legacy' | 'new' => {
-    // Priority 1: Check for new OIDC tokens
+    // Priority 1: Existing new OIDC session
     if (localStorage.getItem('new_api_access_token')) return 'new';
     
-    // Priority 2: Check for legacy tokens
+    // Priority 2: Existing legacy session
     if (localStorage.getItem('authToken')) return 'legacy';
     
-    // Default to 'legacy' — uses the app's own registered app_id.
-    // The OIDC client (new mode) requires pre-registering redirect URIs with
-    // Deriv's auth server, which is not done for this deployment.
-    return 'legacy';
+    // Default: 'new' OIDC PKCE flow — site is registered on Deriv Dashboard
+    // with redirect_uri https://<domain>/callback
+    return 'new';
 };
 
 export const API_MODE = getApiMode();

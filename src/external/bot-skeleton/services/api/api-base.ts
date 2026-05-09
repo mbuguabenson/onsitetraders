@@ -49,9 +49,22 @@ class APIBase {
     publicApi: TApiBaseApi | null = null; // New Public API (Market Data)
     tradingApi: TApiBaseApi | null = null; // New Trading API (Authenticated)
 
+    // Returns the API for TRADING operations (balance, buy, proposal_open_contract)
     get api(): TApiBaseApi | null {
         if (API_MODE === 'new') {
             return this.tradingApi || this.publicApi;
+        }
+        return this._legacyApi;
+    }
+
+    // Returns the API for MARKET DATA (contracts_for, active_symbols, ticks)
+    // Always uses the public/unauthenticated connection so it works before login
+    // and for all pages that don't need trading auth.
+    get marketApi(): TApiBaseApi | null {
+        if (API_MODE === 'new') {
+            // Prefer publicApi for market data — it is always connected,
+            // even before the user logs in.
+            return this.publicApi || this.tradingApi;
         }
         return this._legacyApi;
     }
@@ -155,29 +168,46 @@ class APIBase {
     async initNewApi(force_create_connection = false) {
         console.log('[API] Initializing New API Stack...');
 
-        // 1. Initialize Public WS (Market Data)
+        // 1. Public WebSocket — Market Data (contracts_for, active_symbols, ticks)
+        //    Must use the standard v3 endpoint (ws.derivws.com/websockets/v3) because:
+        //    - It speaks the same JSON protocol that contracts-for.js / the bot builder use
+        //    - The old v2 endpoint (api.derivws.com/trading/v1/options/ws/public) silently
+        //      drops v3 message types, causing "trade types not available" in every tab
         if (!this.publicApi || force_create_connection) {
-            const socket_url = `wss://api.derivws.com/trading/v1/options/ws/public?app_id=${getAppId()}`;
-            const deriv_socket = new WebSocket(socket_url);
-            this.publicApi = this.wrapSocket(deriv_socket);
+            if (this.publicApi?.connection) {
+                this.publicApi.disconnect();
+            }
+
+            const lang = (document.documentElement.lang || 'EN').toUpperCase();
+            const socket_url = `wss://ws.derivws.com/websockets/v3?app_id=${getAppId()}&l=${lang}&brand=deriv`;
+            console.log('[API] Connecting Public (Market Data) WS:', socket_url);
+            const pub_socket = new WebSocket(socket_url);
+            this.publicApi = this.wrapSocket(pub_socket);
 
             this.publicApi?.connection.addEventListener('open', () => {
-                console.log('[API] Public WebSocket Connected');
+                console.log('[API] Public WebSocket Connected (v3 market data)');
                 this.onsocketopen();
+                // Fetch active symbols immediately so the bot builder
+                // can populate its symbol list across all tabs
                 this.getActiveSymbols();
             });
             this.publicApi?.connection.addEventListener('close', () => {
                 console.log('[API] Public WebSocket Closed');
-                this.onsocketclose();
+                // Only propagate close if trading WS is also gone
+                if (!this.tradingApi || this.tradingApi.connection.readyState > 1) {
+                    this.onsocketclose();
+                }
             });
         }
 
-        // 2. Initialize Trading WS (If logged in)
+        // 2. Trading WebSocket — Authenticated streams (balance, buy, transaction)
+        //    Uses an OTP URL obtained from the Deriv REST API. The OTP URL is also
+        //    a v3 WebSocket but pre-authorized, so no separate `authorize` call is needed.
         const storedToken = localStorage.getItem('new_api_access_token');
         let storedId = localStorage.getItem('new_api_account_id');
 
-        // Fallback for account ID
-        if (!storedId && localStorage.getItem('new_api_accounts_list')) {
+        // Fallback: derive account_id from accounts list
+        if (!storedId) {
             const accounts = JSON.parse(localStorage.getItem('new_api_accounts_list') || '[]');
             if (accounts.length > 0) {
                 storedId = accounts[0].account_id;
@@ -193,18 +223,18 @@ class APIBase {
             try {
                 const otpUrl = await this.fetchOTPForAccount(accountId, token);
                 if (!otpUrl) throw new Error('Failed to obtain OTP URL');
-                
+
                 const trading_socket = new WebSocket(otpUrl);
                 this.tradingApi = this.wrapSocket(trading_socket);
 
                 this.tradingApi?.connection.addEventListener('open', () => {
-                    console.log('[API] Trading WebSocket Connected (Pre-authorized)');
+                    console.log('[API] Trading WebSocket Connected (pre-authorized)');
+                    // Trading WS is now the primary socket — update connection status
                     this.onsocketopen();
-                    
-                    // Sync with global auth stream so stores (like ClientStore) update
+
                     const accounts = JSON.parse(localStorage.getItem('new_api_accounts_list') || '[]');
                     const activeAccount = accounts.find((a: any) => a.account_id === accountId) || accounts[0];
-                    
+
                     const updateAuthData = (balance: number) => {
                         const authData = {
                             loginid: accountId,
@@ -214,44 +244,46 @@ class APIBase {
                                 is_virtual: a.account_type === 'demo',
                                 balance: a.balance,
                             })),
-                            balance: balance,
+                            balance,
                             currency: activeAccount?.currency || 'USD',
                         };
-
                         this.account_info = authData;
                         this.account_id = accountId;
                         this.token = token;
-
                         setAccountList(authData.account_list);
                         setAuthData(authData as any);
                     };
 
-                    // Initial broadcast using balance from account list (instantly shows real balance)
                     const initialBalance = activeAccount ? Number(activeAccount.balance) : 0;
                     updateAuthData(isNaN(initialBalance) ? 0 : initialBalance);
 
-                    // Listen for real-time balance updates
+                    // Real-time balance updates from the trading stream
                     this.tradingApi?.onMessage().subscribe(({ data }: any) => {
                         if (data?.msg_type === 'balance' && data.balance) {
-                            console.log('[API] New API Balance Update:', data.balance.balance);
                             updateAuthData(data.balance.balance);
                         }
                     });
 
                     setIsAuthorized(true);
                     this.is_authorized = true;
+                    // Subscribe to trading streams (balance, transaction, poc)
                     this.subscribe();
                 });
+
                 this.tradingApi?.connection.addEventListener('close', () => {
                     console.log('[API] Trading WebSocket Closed');
                     this.onsocketclose();
                 });
             } catch (e: any) {
                 console.error('[API] Failed to initialize Trading WS:', e);
-                this.common_store?.setError(true, {
-                    message: `Trading session failed: ${e.message}. Please try re-logging.`,
-                    header: 'Authentication Error',
-                });
+                // Non-fatal: public WS is still alive for market data
+                // Show error only if this is a hard auth failure, not a network blip
+                if (e.message && !e.message.includes('timeout')) {
+                    this.common_store?.setError(true, {
+                        message: `Trading session failed: ${e.message}. Please try re-logging.`,
+                        header: 'Authentication Error',
+                    });
+                }
             } finally {
                 setIsAuthorizing(false);
             }
@@ -556,9 +588,11 @@ class APIBase {
 
     getActiveSymbols = async () => {
         const isNew = API_MODE === 'new';
+        // Always use the public/market-data socket for active_symbols so it
+        // works before the user logs in and on every tab simultaneously.
         let activeApi = isNew ? this.publicApi : this.api;
-        
-        // Robust wait for API initialization
+
+        // Robust wait for public API initialization
         if (isNew && !activeApi) {
             for (let i = 0; i < 50; i++) {
                 await new Promise(r => setTimeout(r, 100));

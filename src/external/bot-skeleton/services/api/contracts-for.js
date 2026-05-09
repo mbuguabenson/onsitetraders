@@ -199,7 +199,10 @@ export default class ContractsFor {
             this.retrieving_contracts_for[symbol] = new PendingPromise();
             let response;
             try {
-                response = await api_base.api.send({ contracts_for: symbol });
+                // Use marketApi (public v3 WS) — it always supports contracts_for
+                // regardless of whether the user is logged in or which tab is active.
+                const market_api = api_base.marketApi || api_base.api;
+                response = await market_api.send({ contracts_for: symbol });
             } catch (error) {
                 console.error(`[ContractsFor] Error fetching contracts for ${symbol}:`, error);
                 return [];

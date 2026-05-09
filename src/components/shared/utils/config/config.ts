@@ -237,10 +237,8 @@ export const clearCSRFToken = (): void => {
 const legacyGenerateOAuthURL = () => {
     const is_local = isLocal();
     const app_id = is_local ? APP_IDS.LOCALHOST : getAppId();
-    // Use /callback as redirect_uri — this is registered in the Deriv app portal
-    // (api.deriv.com) for app_id 113536, and our callback-page.tsx handles
-    // both legacy (acct1/token1) and new (code/state) token formats.
-    const redirect_uri = `${window.location.origin}/callback`;
+    // Deriv Dashboard typically registers the base URL.
+    const redirect_uri = window.location.origin;
     const login_url = `https://oauth.deriv.com/oauth2/authorize?app_id=${app_id}&brand=deriv&redirect_uri=${encodeURIComponent(redirect_uri)}`;
 
     console.log('[Config] Generated Legacy OAuth URL:', login_url);
@@ -250,7 +248,8 @@ const legacyGenerateOAuthURL = () => {
 
 const newGenerateOAuthURL = async (prompt?: string) => {
     const client_id = getClientId();
-    const redirect_uri = `${window.location.origin}/callback`;
+    // Use base URL to match Deriv Dashboard registration
+    const redirect_uri = window.location.origin;
     
     // Generate PKCE
     const { code_verifier, code_challenge } = await generatePKCE();

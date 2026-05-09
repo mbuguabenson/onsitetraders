@@ -11,8 +11,10 @@ export const getApiMode = (): 'legacy' | 'new' => {
     // Priority 2: Check for legacy tokens
     if (localStorage.getItem('authToken')) return 'legacy';
     
-    // Default to 'new' for new login attempts
-    return 'new';
+    // Default to 'legacy' — uses the app's own registered app_id.
+    // The OIDC client (new mode) requires pre-registering redirect URIs with
+    // Deriv's auth server, which is not done for this deployment.
+    return 'legacy';
 };
 
 export const API_MODE = getApiMode();
@@ -236,10 +238,12 @@ export const clearCSRFToken = (): void => {
 const legacyGenerateOAuthURL = () => {
     const is_local = isLocal();
     const app_id = is_local ? APP_IDS.LOCALHOST : getAppId();
-    // Use the current origin as redirect_uri to prevent Deriv from redirecting to their home page
-    const redirect_uri = window.location.origin;
-    const login_url = `https://oauth.deriv.com/oauth2/authorize?app_id=${app_id}&brand=deriv&redirect_uri=${encodeURIComponent(redirect_uri)}&state=`;
- 
+    // Use /callback as redirect_uri — this is registered in the Deriv app portal
+    // (api.deriv.com) for app_id 113536, and our callback-page.tsx handles
+    // both legacy (acct1/token1) and new (code/state) token formats.
+    const redirect_uri = `${window.location.origin}/callback`;
+    const login_url = `https://oauth.deriv.com/oauth2/authorize?app_id=${app_id}&brand=deriv&redirect_uri=${encodeURIComponent(redirect_uri)}`;
+
     console.log('[Config] Generated Legacy OAuth URL:', login_url);
     return login_url;
 };

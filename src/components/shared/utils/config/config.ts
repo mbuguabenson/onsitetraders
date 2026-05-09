@@ -1,5 +1,6 @@
 import { isStaging } from '../url/helpers';
 import { generatePKCE, generateState, storePKCEState } from '@/utils/pkce';
+import brandConfig from '../../../../../brand.config.json';
 
 export const DERIV_NEW_AUTH_URL = 'https://auth.deriv.com/oauth2/auth';
 export const DERIV_NEW_TOKEN_URL = 'https://auth.deriv.com/oauth2/token';
@@ -169,6 +170,68 @@ export const getDebugServiceWorker = () => {
     return false;
 };
 
+/**
+ * Generates a cryptographically secure CSRF token
+ * @returns A random base64url-encoded string
+ */
+const generateCSRFToken = (): string => {
+    // Generate 32 random bytes (256 bits) for strong security
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+
+    // Convert to base64url encoding (URL-safe)
+    const base64 = btoa(String.fromCharCode(...array));
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+};
+
+/**
+ * Stores CSRF token in sessionStorage for validation after OAuth callback
+ * @param token The CSRF token to store
+ */
+const storeCSRFToken = (token: string): void => {
+    sessionStorage.setItem('oauth_csrf_token', token);
+    // Also store timestamp for token expiration (e.g., 10 minutes)
+    sessionStorage.setItem('oauth_csrf_token_timestamp', Date.now().toString());
+};
+
+/**
+ * Validates CSRF token from OAuth callback
+ * @param token The token to validate
+ * @returns true if token is valid and not expired
+ */
+export const validateCSRFToken = (token: string): boolean => {
+    const storedToken = sessionStorage.getItem('oauth_csrf_token');
+    const timestamp = sessionStorage.getItem('oauth_csrf_token_timestamp');
+
+    if (!storedToken || !timestamp) {
+        return false;
+    }
+
+    // Check if token matches
+    if (storedToken !== token) {
+        return false;
+    }
+
+    // Check if token is expired (10 minutes = 600000ms)
+    const tokenAge = Date.now() - parseInt(timestamp, 10);
+    if (tokenAge > 600000) {
+        // Clean up expired token
+        sessionStorage.removeItem('oauth_csrf_token');
+        sessionStorage.removeItem('oauth_csrf_token_timestamp');
+        return false;
+    }
+
+    return true;
+};
+
+/**
+ * Clears CSRF token from sessionStorage after successful validation
+ */
+export const clearCSRFToken = (): void => {
+    sessionStorage.removeItem('oauth_csrf_token');
+    sessionStorage.removeItem('oauth_csrf_token_timestamp');
+};
+
 
 const legacyGenerateOAuthURL = () => {
     const is_local = isLocal();
@@ -182,7 +245,7 @@ const legacyGenerateOAuthURL = () => {
 };
 
 
-const newGenerateOAuthURL = async () => {
+const newGenerateOAuthURL = async (prompt?: string) => {
     const client_id = getClientId();
     const redirect_uri = `${window.location.origin}/callback`;
     
@@ -190,18 +253,31 @@ const newGenerateOAuthURL = async () => {
     const { code_verifier, code_challenge } = await generatePKCE();
     const state = generateState();
     
+    // Generate and store CSRF token (for template compatibility)
+    const csrfToken = generateCSRFToken();
+    storeCSRFToken(csrfToken);
+    
     // Store for callback
     storePKCEState(code_verifier, state);
     
-    const login_url = `${DERIV_NEW_AUTH_URL}?client_id=${client_id}&redirect_uri=${encodeURIComponent(redirect_uri)}&response_type=code&scope=trade&state=${state}&code_challenge=${code_challenge}&code_challenge_method=S256`;
+    let login_url = `${DERIV_NEW_AUTH_URL}?client_id=${client_id}&redirect_uri=${encodeURIComponent(redirect_uri)}&response_type=code&scope=trade&state=${state}&code_challenge=${code_challenge}&code_challenge_method=S256`;
+
+    if (prompt) {
+        login_url += `&prompt=${encodeURIComponent(prompt)}`;
+    }
 
     console.log('[Config] Generated New OIDC URL with PKCE:', login_url);
     return login_url;
 };
 
 
-export const generateOAuthURL = async (mode = API_MODE) => {
-    if (mode === 'new') {
+export const generateOAuthURL = async (promptOrMode: string | undefined = API_MODE) => {
+    // If it looks like a prompt ('registration') and we are in new mode, use it as prompt
+    if (promptOrMode === 'registration' || promptOrMode === 'login') {
+        return newGenerateOAuthURL(promptOrMode);
+    }
+    
+    if (promptOrMode === 'new') {
         return newGenerateOAuthURL();
     }
     return legacyGenerateOAuthURL();

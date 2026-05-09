@@ -6,25 +6,29 @@ import { MenuItem, Text, useDevice } from '@deriv-com/ui';
 import useMobileMenuConfig from './use-mobile-menu-config';
 
 type TMenuContentProps = {
+    enableThemeToggle?: boolean;
     onOpenSubmenu?: (submenu: string) => void;
+    onLogout?: () => void;
 };
 
-const MenuContent = observer(({ onOpenSubmenu }: TMenuContentProps) => {
+const MenuContent = observer(({ enableThemeToggle = true, onOpenSubmenu, onLogout }: TMenuContentProps) => {
     const { isDesktop } = useDevice();
     const { client } = useStore();
     const textSize = isDesktop ? 'sm' : 'md';
-    const { config } = useMobileMenuConfig(client);
+    // Pass enableThemeToggle to control theme toggle visibility
+    const { config } = useMobileMenuConfig(client, onLogout, enableThemeToggle);
 
     return (
         <div className='mobile-menu__content'>
             <div className='mobile-menu__content__items'>
                 {config.map((item, index) => {
                     const removeBorderBottom = item.find(({ removeBorderBottom }) => removeBorderBottom);
+                    const isLastSection = index === config.length - 1;
 
                     return (
                         <div
                             className={clsx('mobile-menu__content__items--padding', {
-                                'mobile-menu__content__items--bottom-border': !removeBorderBottom,
+                                'mobile-menu__content__items--bottom-border': !removeBorderBottom && !isLastSection,
                             })}
                             data-testid='dt_menu_item'
                             key={index}
@@ -42,7 +46,7 @@ const MenuContent = observer(({ onOpenSubmenu }: TMenuContentProps) => {
                                         target,
                                         isActive,
                                     },
-                                    childIndex
+                                    itemIndex
                                 ) => {
                                     const is_deriv_logo = label === 'Deriv.com';
                                     if (as === 'a') {
@@ -55,7 +59,7 @@ const MenuContent = observer(({ onOpenSubmenu }: TMenuContentProps) => {
                                                 })}
                                                 disableHover
                                                 href={href}
-                                                key={childIndex}
+                                                key={`${index}-${itemIndex}-${label}`}
                                                 leftComponent={
                                                     <LeftComponent
                                                         className='mobile-menu__content__items--right-margin'
@@ -77,7 +81,7 @@ const MenuContent = observer(({ onOpenSubmenu }: TMenuContentProps) => {
                                                 'mobile-menu__content__items__item--active': isActive,
                                             })}
                                             disableHover
-                                            key={childIndex}
+                                            key={`${index}-${itemIndex}-${label}`}
                                             leftComponent={
                                                 <LeftComponent
                                                     className='mobile-menu__content__items--right-margin'

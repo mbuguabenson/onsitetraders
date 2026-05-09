@@ -12,7 +12,7 @@ import {
     crypto_currencies_display_order, 
     fiat_currencies_display_order, 
 } from '../shared';
-import { generateOAuthURL, API_MODE } from '../shared/utils/config/config';
+import { API_MODE } from '../shared/utils/config/config';
 import { useDevice } from '@deriv-com/ui';
 import Footer from './footer';
 import AppHeader from './header';
@@ -196,8 +196,9 @@ const Layout = observer(() => {
                 if (tmbEnabled) {
                     await onRenderTMBCheck();
                 } else if (shouldAuthenticate) {
-                    isRedirecting.current = true;
-                    window.location.assign(await generateOAuthURL());
+                    // isRedirecting.current = true;
+                    // window.location.assign(await generateOAuthURL());
+                    console.log('[Layout] Autologin suppressed. User must log in manually via Header.');
                 }
             } catch (err) {
                 // eslint-disable-next-line no-console

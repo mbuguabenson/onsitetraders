@@ -1,7 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+// Updated to use brand configuration for mobile menu elements visibility
+// Controls language settings and theme toggle via brand.config.json
+import { useState } from 'react';
+import brandConfig from '@/../brand.config.json';
 import useModalManager from '@/hooks/useModalManager';
+// [AI] Import useStore to check if menu has items
+import { useStore } from '@/hooks/useStore';
+// [/AI]
 import { getActiveTabUrl } from '@/utils/getActiveTabUrl';
-import { LANGUAGES } from '@/utils/languages';
+import { FILTERED_LANGUAGES } from '@/utils/languages';
 import { useTranslations } from '@deriv-com/translations';
 import { Drawer, MobileLanguagesDrawer, useDevice } from '@deriv-com/ui';
 import NetworkStatus from './../../footer/NetworkStatus';
@@ -11,15 +17,31 @@ import MenuContent from './menu-content';
 import MenuHeader from './menu-header';
 import ReportsSubmenu from './reports-submenu';
 import ToggleButton from './toggle-button';
+// [AI] Import hook to check if menu has items
+import useMobileMenuConfig from './use-mobile-menu-config';
+// [/AI]
 import './mobile-menu.scss';
 
-const MobileMenu = () => {
+type TMobileMenuProps = {
+    onLogout?: () => void;
+};
+
+const MobileMenu = ({ onLogout }: TMobileMenuProps) => {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
     const { currentLang = 'EN', localize, switchLanguage } = useTranslations();
     const { hideModal, isModalOpenFor, showModal } = useModalManager();
     const { isDesktop } = useDevice();
-    const drawerRef = useRef<HTMLDivElement>(null);
+    // [AI] Get client from store to check menu items
+    const { client } = useStore() ?? {};
+    // [/AI]
+
+    // Get mobile menu configuration from brand.config.json
+    const enableLanguageSettings = brandConfig.platform.footer?.enable_language_settings ?? true;
+    const enableThemeToggle = brandConfig.platform.footer?.enable_theme_toggle ?? true;
+
+    // Check if menu has any items to determine if mobile menu should be shown
+    const { hasMenuItems } = useMobileMenuConfig(client, onLogout, enableThemeToggle);
 
     const openDrawer = () => setIsDrawerOpen(true);
     const closeDrawer = () => {
@@ -27,53 +49,34 @@ const MobileMenu = () => {
         setActiveSubmenu(null);
     };
 
-    // Close drawer when clicking outside
-    useEffect(() => {
-        if (!isDrawerOpen) return;
-
-        const handleOutsideClick = (e: MouseEvent) => {
-            // If drawer container exists and click is outside it, close
-            const drawerContainer = document.querySelector('.deriv-drawer__container');
-            if (drawerContainer && !drawerContainer.contains(e.target as Node)) {
-                closeDrawer();
-            }
-        };
-
-        // Small delay so the open-click doesn't immediately trigger close
-        const timer = setTimeout(() => {
-            document.addEventListener('mousedown', handleOutsideClick);
-        }, 50);
-
-        return () => {
-            clearTimeout(timer);
-            document.removeEventListener('mousedown', handleOutsideClick);
-        };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isDrawerOpen]);
-
+    const openSubmenu = (submenu: string) => setActiveSubmenu(submenu);
+    const closeSubmenu = () => setActiveSubmenu(null);
     const openLanguageSetting = () => showModal('MobileLanguagesDrawer');
     const isLanguageSettingVisible = Boolean(isModalOpenFor('MobileLanguagesDrawer'));
 
-    const openSubmenu = (submenu: string) => setActiveSubmenu(submenu);
-    const closeSubmenu = () => setActiveSubmenu(null);
-
     if (isDesktop) return null;
+    // [AI] Hide mobile menu if there are no menu items to display
+    if (!hasMenuItems) return null;
+    // [/AI]
     return (
-        <div className='mobile-menu' ref={drawerRef}>
+        <div className='mobile-menu'>
             <div className='mobile-menu__toggle'>
                 <ToggleButton onClick={openDrawer} />
             </div>
 
             <Drawer isOpen={isDrawerOpen} onCloseDrawer={closeDrawer} width='29.5rem'>
                 <Drawer.Header onCloseDrawer={closeDrawer}>
+                    {/* [AI] Conditionally render language settings in header based on brand config */}
                     <MenuHeader
-                        hideLanguageSetting={isLanguageSettingVisible}
+                        hideLanguageSetting={!enableLanguageSettings || isLanguageSettingVisible}
                         openLanguageSetting={openLanguageSetting}
                     />
+                    {/* [/AI] */}
                 </Drawer.Header>
 
                 <Drawer.Content>
-                    {isLanguageSettingVisible ? (
+                    {/* [AI] Conditionally render language drawer based on brand config */}
+                    {enableLanguageSettings && isLanguageSettingVisible ? (
                         <>
                             <div className='mobile-menu__back-btn'>
                                 <BackButton buttonText={localize('Language')} onClick={hideModal} />
@@ -81,12 +84,20 @@ const MobileMenu = () => {
 
                             <MobileLanguagesDrawer
                                 isOpen
-                                languages={LANGUAGES}
+                                languages={FILTERED_LANGUAGES}
                                 onClose={hideModal}
                                 onLanguageSwitch={code => {
-                                    switchLanguage(code);
-                                    window.location.replace(getActiveTabUrl());
-                                    window.location.reload();
+                                    try {
+                                        switchLanguage(code);
+                                        hideModal();
+                                        // Page reload is necessary because Blockly is outside React lifecycle
+                                        // and won't re-render with new language without full page refresh
+                                        // Use replace() to navigate to the active tab URL which will reload the page
+                                        window.location.replace(getActiveTabUrl());
+                                    } catch (error) {
+                                        console.error('Failed to switch language:', error);
+                                        hideModal();
+                                    }
                                 }}
                                 selectedLanguage={currentLang}
                                 wrapperClassName='mobile-menu__language-drawer'
@@ -100,8 +111,16 @@ const MobileMenu = () => {
                             <ReportsSubmenu />
                         </>
                     ) : (
-                        <MenuContent onOpenSubmenu={openSubmenu} />
+                        <MenuContent
+                            enableThemeToggle={enableThemeToggle}
+                            onOpenSubmenu={openSubmenu}
+                            onLogout={() => {
+                                closeDrawer();
+                                onLogout?.();
+                            }}
+                        />
                     )}
+                    {/* [/AI] */}
                 </Drawer.Content>
 
                 <Drawer.Footer className='mobile-menu__footer'>

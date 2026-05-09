@@ -6,13 +6,14 @@ import {
     connectionStatus$,
     isAuthorized$,
     isAuthorizing$,
+    setIsAuthorizing as setIsAuthorizingStream,
 } from '@/external/bot-skeleton/services/api/observables/connection-status-stream';
 import { TAuthData } from '@/types/api-types';
 
 export const useApiBase = () => {
     const [connectionStatus, setConnectionStatus] = useState<CONNECTION_STATUS>(CONNECTION_STATUS.UNKNOWN);
     const [isAuthorized, setIsAuthorized] = useState<boolean>(false);
-    const [isAuthorizing, setIsAuthorizing] = useState<boolean>(false);
+    const [isAuthorizing, setIsAuthorizing] = useState<boolean>(true); // Will be overridden by observable stream which now starts with true
     const [accountList, setAccountList] = useState<TAuthData['account_list']>([]);
     const [authData, setAuthData] = useState<TAuthData | null>(null);
     const [activeLoginid, setActiveLoginid] = useState<string>('');
@@ -46,5 +47,13 @@ export const useApiBase = () => {
         };
     }, []);
 
-    return { connectionStatus, isAuthorized, isAuthorizing, accountList, authData, activeLoginid };
+    return { 
+        connectionStatus, 
+        isAuthorized, 
+        isAuthorizing, 
+        accountList, 
+        authData, 
+        activeLoginid, 
+        setIsAuthorizing: setIsAuthorizingStream 
+    };
 };

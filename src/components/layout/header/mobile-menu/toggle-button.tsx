@@ -1,16 +1,13 @@
 import { ComponentProps } from 'react';
+import { LegacyMenuHamburger1pxIcon } from '@deriv/quill-icons/Legacy';
 
 type TToggleButton = {
     onClick: ComponentProps<'button'>['onClick'];
 };
 
 const ToggleButton = ({ onClick }: TToggleButton) => (
-    <button className='mobile-menu__toggle-button' onClick={onClick}>
-        <div className='mobile-menu__hamburger'>
-            <span></span>
-            <span></span>
-            <span></span>
-        </div>
+    <button onClick={onClick}>
+        <LegacyMenuHamburger1pxIcon iconSize='xs' fill='var(--text-general)' />
     </button>
 );
 

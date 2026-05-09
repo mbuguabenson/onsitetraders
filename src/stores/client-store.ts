@@ -30,11 +30,11 @@ export default class ClientStore {
     is_landing_company_loaded: boolean | undefined;
     all_accounts_balance: Balance | null = null;
     is_logging_out = false;
+    is_account_regenerating = false;
 
     // TODO: fix with self exclusion
     updateSelfExclusion = () => {};
 
-    private authDataSubscription: { unsubscribe: () => void } | null = null;
     private balanceSubscription: { unsubscribe: () => void } | null = null;
 
     subscribeToBalance = () => {
@@ -67,7 +67,7 @@ export default class ClientStore {
     };
 
     constructor() {
-        this.authDataSubscription = authData$.subscribe(authData => {
+        authData$.subscribe(authData => {
             if (authData) {
                 console.log('[ClientStore] Syncing authData:', {
                     loginid: authData.loginid,
@@ -132,6 +132,7 @@ export default class ClientStore {
             upgradeable_landing_companies: observable,
             website_status: observable,
             is_logging_out: observable,
+            is_account_regenerating: observable,
             active_accounts: computed,
             clients_country: computed,
             is_bot_allowed: computed,
@@ -429,7 +430,16 @@ export default class ClientStore {
         localStorage.removeItem('accountsList');
         localStorage.removeItem('authToken');
         localStorage.removeItem('clientAccounts');
+        
+        // Clear new OIDC tokens
+        localStorage.removeItem('new_api_access_token');
+        localStorage.removeItem('new_api_refresh_token');
+        localStorage.removeItem('new_api_account_id');
+        localStorage.removeItem('new_api_accounts_list');
+        localStorage.removeItem('API_MODE');
+
         removeCookies('client_information');
+        removeCookies('logged_state');
 
         setIsAuthorized(false);
         setAccountList([]);

@@ -106,11 +106,19 @@ const CallbackPage = observer(() => {
                     
                     // 2. Fetch full account list to support switching (Step 3 of checklist)
                     console.log('[OAuth2] Fetching account list...');
+                    const { getAppId } = await import('@/components/shared/utils/config/config');
                     const accountsResponse = await fetch('https://api.derivws.com/trading/v1/options/accounts', {
                         headers: {
                             Authorization: `Bearer ${data.access_token}`,
+                            'Deriv-App-Id': getAppId(),
                         },
                     });
+                    
+                    if (!accountsResponse.ok) {
+                        const text = await accountsResponse.text();
+                        throw new Error(`Accounts fetch failed: ${accountsResponse.status} ${text}`);
+                    }
+                    
                     const accountsData = await accountsResponse.json();
                     
                     if (accountsData.data && accountsData.data.length > 0) {

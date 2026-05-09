@@ -293,11 +293,12 @@ class APIBase {
     async fetchOTPForAccount(accountId: string, token: string): Promise<string> {
         console.log(`[API] Fetching OTP for account: ${accountId}...`);
         try {
+            const { getAppId } = await import('@/components/shared/utils/config/config');
             const response = await fetch(`https://api.derivws.com/trading/v1/options/accounts/${accountId}/otp`, {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${token}`,
-                    // Note: Deriv-App-ID is intentionally omitted here as per official template
+                    'Deriv-App-Id': getAppId()
                 },
             });
 

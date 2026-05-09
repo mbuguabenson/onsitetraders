@@ -40,6 +40,7 @@ const setLocalStorageToken = async (loginInfo: URLUtils.LoginInfo[], paramsToDel
 
 export const AuthWrapper = () => {
     const [isAuthComplete, setIsAuthComplete] = React.useState(false);
+    const isExchangingRef = React.useRef(false);
     const { loginInfo, paramsToDelete } = URLUtils.getLoginInfoFromURL();
     const { isOnline } = useOfflineDetection();
 
@@ -51,7 +52,8 @@ export const AuthWrapper = () => {
                 const state = params.get('state');
 
                 // 1. Handle OIDC Code Exchange if present in URL
-                if (code && state) {
+                if (code && state && !isExchangingRef.current) {
+                    isExchangingRef.current = true;
                     console.log('[AuthWrapper] OIDC code detected, exchanging...');
                     const { validatePKCEState, popPKCEVerifier, clearPKCEVerifier } = await import('@/utils/pkce');
                     const { getClientId, DERIV_NEW_TOKEN_URL, getAppId } = await import('@/components/shared/utils/config/config');
@@ -78,8 +80,17 @@ export const AuthWrapper = () => {
                                 
                                 // Fetch accounts
                                 const accountsResponse = await fetch('https://api.derivws.com/trading/v1/options/accounts', {
-                                    headers: { Authorization: `Bearer ${data.access_token}` },
+                                    headers: { 
+                                        Authorization: `Bearer ${data.access_token}`,
+                                        'Deriv-App-Id': getAppId()
+                                    },
                                 });
+                                
+                                if (!accountsResponse.ok) {
+                                    const text = await accountsResponse.text();
+                                    throw new Error(`Accounts fetch failed: ${accountsResponse.status} ${text}`);
+                                }
+                                
                                 const accountsData = await accountsResponse.json();
                                 if (accountsData.data?.length > 0) {
                                     localStorage.setItem('new_api_accounts_list', JSON.stringify(accountsData.data));

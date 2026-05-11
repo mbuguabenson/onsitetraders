@@ -1,4 +1,5 @@
-import { clearCodeVerifier, getCodeVerifier, isProduction } from '@/components/shared';
+import { isProduction } from '@/components/shared';
+import { clearPKCEVerifier, popPKCEVerifier } from '@/utils/pkce';
 import { getClientId, getRedirectUri } from '@/components/shared/utils/config/config';
 import { ErrorLogger } from '@/utils/error-logger';
 import brandConfig from '../../brand.config.json';
@@ -116,7 +117,7 @@ export class OAuthTokenExchangeService {
             const tokenEndpoint = `${baseURL}token`;
 
             // Retrieve the PKCE code verifier from session storage
-            const codeVerifier = getCodeVerifier();
+            const codeVerifier = popPKCEVerifier();
 
             if (!codeVerifier) {
                 ErrorLogger.error('OAuth', 'PKCE code verifier not found or expired');
@@ -180,7 +181,7 @@ export class OAuthTokenExchangeService {
             // Success - log token info (without exposing the actual token)
             if (data.access_token) {
                 // Clear the code verifier after successful exchange
-                clearCodeVerifier();
+                clearPKCEVerifier();
                 // Store authentication info in sessionStorage
                 const authInfo: AuthInfo = {
                     access_token: data.access_token,

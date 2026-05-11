@@ -419,6 +419,11 @@ class APIBase {
             getSettings: () => send({ get_settings: 1 }),
             setSettings: (data: any) => send({ set_settings: 1, ...data }),
             tncApproval: () => send({ tnc_approval: 1 }),
+            buy: (id: string, price: number) => send({ buy: id, price }),
+            proposal: (data: any) => send({ proposal: 1, ...data }),
+            proposalOpenContract: (data: any) => send({ proposal_open_contract: 1, ...data }),
+            sell: (id: string, price: number) => send({ sell: id, price }),
+            transaction: () => send({ transaction: 1, subscribe: 1 }),
         } as any;
     }
 

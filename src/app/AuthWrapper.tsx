@@ -153,7 +153,53 @@ export const AuthWrapper = () => {
                 const new_account_id = localStorage.getItem('new_api_account_id');
                 
                 if (new_token && new_account_id) {
-                    console.log('[AuthWrapper] New API session detected');
+                    console.log('[AuthWrapper] New API session detected, pre-fetching accounts...');
+                    
+                    try {
+                        const { getAppId } = await import('@/components/shared/utils/config/config');
+                        const accountsResponse = await fetch('https://api.derivws.com/trading/v1/options/accounts', {
+                            headers: { 
+                                Authorization: `Bearer ${new_token}`,
+                                'Deriv-App-Id': String(getAppId())
+                            },
+                        });
+                        
+                        if (accountsResponse.ok) {
+                            const accountsData = await accountsResponse.json();
+                            if (accountsData.data?.length > 0) {
+                                // Update stored balance and accounts
+                                const accountsList: Record<string, string> = {};
+                                const clientAccounts: Record<string, any> = {};
+                                
+                                accountsData.data.forEach((acc: any) => {
+                                    accountsList[acc.account_id] = new_token;
+                                    clientAccounts[acc.account_id] = {
+                                        loginid: acc.account_id,
+                                        token: new_token,
+                                        currency: acc.currency || 'USD',
+                                        balance: acc.balance || 0,
+                                        is_virtual: acc.account_type === 'demo' ? 1 : 0
+                                    };
+                                });
+                                
+                                localStorage.setItem('new_api_accounts_list', JSON.stringify(accountsData.data));
+                                localStorage.setItem('accountsList', JSON.stringify(accountsList));
+                                localStorage.setItem('clientAccounts', JSON.stringify(clientAccounts));
+                            }
+                        } else if (accountsResponse.status === 401) {
+                            // Token might be expired, try refreshing
+                            console.log('[AuthWrapper] Token expired, attempting refresh...');
+                            const { refreshToken } = await import('@/utils/auth-service');
+                            const refreshed = await refreshToken();
+                            if (!refreshed) {
+                                console.warn('[AuthWrapper] Refresh failed, clearing session');
+                                localStorage.clear(); // Or just the auth keys
+                            }
+                        }
+                    } catch (e) {
+                        console.error('[AuthWrapper] Failed to pre-fetch accounts:', e);
+                    }
+                    
                     setIsAuthComplete(true);
                     return;
                 }

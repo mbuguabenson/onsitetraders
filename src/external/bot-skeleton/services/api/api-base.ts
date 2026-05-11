@@ -284,8 +284,16 @@ class APIBase {
                 });
 
                 this.tradingApi?.connection.addEventListener('close', () => {
-                    console.log('[API] Trading WebSocket Closed');
-                    this.onsocketclose();
+                    console.log('[API] Trading WebSocket Closed. Attempting reconnect...');
+                    setIsAuthorized(false);
+                    this.is_authorized = false;
+                    
+                    // Small delay before reconnect to avoid spam
+                    setTimeout(() => {
+                        if (localStorage.getItem('new_api_access_token')) {
+                            this.initNewApi(true);
+                        }
+                    }, 2000);
                 });
             } catch (e: any) {
                 console.error('[API] Failed to initialize Trading WS:', e);
@@ -619,7 +627,7 @@ class APIBase {
         // Robust wait for public API initialization
         if (isNew && !activeApi) {
             for (let i = 0; i < 50; i++) {
-                await new Promise(r => setTimeout(r, 100));
+                await new Promise(r => setTimeout(r, 200));
                 activeApi = this.publicApi;
                 if (activeApi) break;
             }

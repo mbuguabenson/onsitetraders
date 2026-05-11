@@ -56,11 +56,11 @@ export const AuthWrapper = () => {
                     isExchangingRef.current = true;
                     console.log('[AuthWrapper] OIDC code detected, exchanging...');
                     const { validatePKCEState, popPKCEVerifier, clearPKCEVerifier } = await import('@/utils/pkce');
-                    const { getClientId, DERIV_NEW_TOKEN_URL, getAppId } = await import('@/components/shared/utils/config/config');
+                    const { getClientId, DERIV_NEW_TOKEN_URL, getAppId, getRedirectUri } = await import('@/components/shared/utils/config/config');
                     
                         const verifier = popPKCEVerifier();
                         if (verifier) {
-                            const redirect_uri = window.location.origin;
+                            const redirect_uri = getRedirectUri();
                             console.log('[AuthWrapper] Exchange Config:', {
                                 client_id: getClientId(),
                                 redirect_uri,

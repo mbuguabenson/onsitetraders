@@ -9,9 +9,8 @@ export const getApiMode = (): 'legacy' | 'new' => {
     // Priority 2: Existing legacy session
     if (localStorage.getItem('authToken')) return 'legacy';
     
-    // Default: 'legacy' flow because Deriv's new OIDC PKCE flow is restricted to internal clients
-    // and third-party devs cannot request 'read' scope via OIDC yet.
-    return 'legacy';
+    // Default to 'new' for current migration
+    return 'new';
 };
 
 export const API_MODE = getApiMode();
@@ -50,6 +49,19 @@ export const getClientId = () => {
         process.env.VITE_CLIENT_ID ||
         (import.meta as any).env?.VITE_CLIENT_ID ||
         '33d0CwaiZBb5E0bWvKfJo'
+    );
+};
+
+/**
+ * Gets the redirect URI for OAuth. 
+ * Defaults to window.location.origin but can be overridden via VITE_REDIRECT_URI.
+ * Note: Deriv Dashboard registration must match this EXACTLY (including trailing slash if present).
+ */
+export const getRedirectUri = () => {
+    return (
+        process.env.VITE_REDIRECT_URI ||
+        (import.meta as any).env?.VITE_REDIRECT_URI ||
+        window.location.origin
     );
 };
 
@@ -235,8 +247,8 @@ export const clearCSRFToken = (): void => {
 const legacyGenerateOAuthURL = () => {
     const is_local = isLocal();
     const app_id = is_local ? APP_IDS.LOCALHOST : getAppId();
-    // Deriv Dashboard typically registers the base URL.
-    const redirect_uri = window.location.origin;
+    // Use centralized redirect_uri helper
+    const redirect_uri = getRedirectUri();
     const login_url = `https://oauth.deriv.com/oauth2/authorize?app_id=${app_id}&brand=deriv&redirect_uri=${encodeURIComponent(redirect_uri)}`;
 
     console.log('[Config] Generated Legacy OAuth URL:', login_url);
@@ -246,8 +258,8 @@ const legacyGenerateOAuthURL = () => {
 
 const newGenerateOAuthURL = async (prompt?: string) => {
     const client_id = getClientId();
-    // Use base URL to match Deriv Dashboard registration
-    const redirect_uri = window.location.origin;
+    // Use centralized redirect_uri helper
+    const redirect_uri = getRedirectUri();
     
     // Generate PKCE
     const { code_verifier, code_challenge } = await generatePKCE();

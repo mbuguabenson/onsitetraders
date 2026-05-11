@@ -29,7 +29,8 @@ export const generateUrlWithRedirect = (path: string): string => {
         }
 
         // Append redirect URI so the destination can send the user back
-        url.searchParams.set('redirect_uri', window.location.origin);
+        const { getRedirectUri } = await import('@/components/shared/utils/config/config');
+        url.searchParams.set('redirect_uri', getRedirectUri());
 
         return url.toString();
     } catch (error) {
@@ -42,4 +43,9 @@ export const generateUrlWithRedirect = (path: string): string => {
  * Appends `redirect_uri` pointing back to the current origin's root page.
  * Useful when a standalone page needs to return the user to the trading bot.
  */
-export const generateRedirectUri = (): string => window.location.origin;
+export const generateRedirectUri = (): string => {
+    // Note: This is now a synchronous wrapper but the actual URI might be async in some apps.
+    // In this project config.ts getRedirectUri is sync.
+    const { getRedirectUri } = require('@/components/shared/utils/config/config');
+    return getRedirectUri();
+};

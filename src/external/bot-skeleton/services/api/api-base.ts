@@ -90,16 +90,29 @@ class APIBase {
     ping_interval: ReturnType<typeof setInterval> | null = null;
 
     unsubscribeAllSubscriptions = () => {
+        const activeApi = this.api;
+        if (!activeApi) return;
+
         this.current_auth_subscriptions?.forEach(subscription_promise => {
-            subscription_promise.then(({ subscription }) => {
-                if (subscription?.id) {
-                    this.api?.send({
-                        forget: subscription.id,
+            subscription_promise.then((response: any) => {
+                const subscriptionId = response?.subscription?.id;
+                if (subscriptionId) {
+                    console.log(`[API] Forgetting subscription: ${subscriptionId}`);
+                    activeApi.send({
+                        forget: subscriptionId,
                     });
                 }
-            });
+            }).catch(e => console.warn('[API] Failed to unsubscribe:', e));
         });
+        
         this.current_auth_subscriptions = [];
+        
+        // Also try forget_all for common types as a safety measure
+        if (activeApi.connection?.readyState === 1) {
+            activeApi.send({
+                forget_all: ['balance', 'transaction', 'proposal_open_contract'],
+            }).catch(() => {});
+        }
     };
 
     onsocketopen() {
@@ -418,9 +431,11 @@ class APIBase {
     }
 
     terminate() {
-        // eslint-disable-next-line no-console
-        if (this.api) {
-            this.api.disconnect();
+        if (API_MODE === 'new') {
+            if (this.publicApi) this.publicApi.disconnect();
+            if (this.tradingApi) this.tradingApi.disconnect();
+        } else if (this._legacyApi) {
+            this._legacyApi.disconnect();
         }
     }
 
@@ -569,15 +584,16 @@ class APIBase {
             
             return doUntilDone(
                 () => {
-                    const subscription = activeApi?.send({
+                    const subscriptionPromise = activeApi?.send({
                         [streamName]: 1,
                         subscribe: 1,
                         ...(streamName === 'balance' && API_MODE === 'legacy' ? { account: 'all' } : {}),
                     });
-                    if (subscription && API_MODE === 'legacy') {
-                        this.current_auth_subscriptions.push(subscription as SubscriptionPromise);
+                    
+                    if (subscriptionPromise) {
+                        this.current_auth_subscriptions.push(subscriptionPromise as any);
                     }
-                    return subscription;
+                    return subscriptionPromise;
                 },
                 [],
                 this

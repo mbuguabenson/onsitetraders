@@ -58,9 +58,15 @@ export const AuthWrapper = () => {
                     const { validatePKCEState, popPKCEVerifier, clearPKCEVerifier } = await import('@/utils/pkce');
                     const { getClientId, DERIV_NEW_TOKEN_URL, getAppId } = await import('@/components/shared/utils/config/config');
                     
-                    if (validatePKCEState(state)) {
                         const verifier = popPKCEVerifier();
                         if (verifier) {
+                            const redirect_uri = window.location.origin;
+                            console.log('[AuthWrapper] Exchange Config:', {
+                                client_id: getClientId(),
+                                redirect_uri,
+                                grant_type: 'authorization_code'
+                            });
+
                             const response = await fetch(DERIV_NEW_TOKEN_URL, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -68,7 +74,7 @@ export const AuthWrapper = () => {
                                     grant_type: 'authorization_code',
                                     code,
                                     client_id: getClientId(),
-                                    redirect_uri: window.location.origin,
+                                    redirect_uri,
                                     code_verifier: verifier,
                                 }),
                             });
@@ -79,19 +85,23 @@ export const AuthWrapper = () => {
                                 localStorage.setItem('new_api_refresh_token', data.refresh_token);
                                 
                                 // Fetch accounts
+                                console.log('[AuthWrapper] Fetching account list...');
                                 const accountsResponse = await fetch('https://api.derivws.com/trading/v1/options/accounts', {
                                     headers: { 
                                         Authorization: `Bearer ${data.access_token}`,
-                                        'Deriv-App-Id': getAppId()
+                                        'Deriv-App-Id': String(getAppId())
                                     },
                                 });
                                 
                                 if (!accountsResponse.ok) {
                                     const text = await accountsResponse.text();
+                                    console.error('[AuthWrapper] Accounts fetch failed:', text);
                                     throw new Error(`Accounts fetch failed: ${accountsResponse.status} ${text}`);
                                 }
                                 
                                 const accountsData = await accountsResponse.json();
+                                console.log('[AuthWrapper] Accounts Response:', JSON.stringify(accountsData, null, 2));
+
                                 if (accountsData.data?.length > 0) {
                                     localStorage.setItem('new_api_accounts_list', JSON.stringify(accountsData.data));
                                     localStorage.setItem('new_api_account_id', accountsData.data[0].account_id);
@@ -125,9 +135,11 @@ export const AuthWrapper = () => {
                                 window.history.replaceState({}, document.title, window.location.origin);
                                 setIsAuthComplete(true);
                                 return;
+                            } else {
+                                const errorData = await response.json().catch(() => ({}));
+                                console.error('[AuthWrapper] Token Exchange Error:', errorData);
                             }
                         }
-                    }
                 }
 
                 // 2. Check for existing New API (OIDC) tokens

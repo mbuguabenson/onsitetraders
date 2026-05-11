@@ -29,7 +29,7 @@ export const generateUrlWithRedirect = (path: string): string => {
         }
 
         // Append redirect URI so the destination can send the user back
-        url.searchParams.set('redirect_uri', `${window.location.origin}/callback`);
+        url.searchParams.set('redirect_uri', window.location.origin);
 
         return url.toString();
     } catch (error) {
@@ -42,4 +42,4 @@ export const generateUrlWithRedirect = (path: string): string => {
  * Appends `redirect_uri` pointing back to the current origin's root page.
  * Useful when a standalone page needs to return the user to the trading bot.
  */
-export const generateRedirectUri = (): string => `${window.location.origin}/callback`;
+export const generateRedirectUri = (): string => window.location.origin;

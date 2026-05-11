@@ -298,7 +298,7 @@ class APIBase {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${token}`,
-                    'Deriv-App-Id': getAppId()
+                    'Deriv-App-Id': String(getAppId())
                 },
             });
 
@@ -308,14 +308,16 @@ class APIBase {
             }
 
             const json = await response.json();
-            console.log('[API] OTP Raw Response:', json);
+            console.log('[API] OTP Raw Response:', JSON.stringify(json, null, 2));
             
-            // Official template uses json.data.url
+            // Prefer json.data.url as per Deriv v4 documentation
             const otpUrl = json?.data?.url || json?.url;
             
             if (!otpUrl) {
+                console.error('[API] OTP response missing data.url:', json);
                 throw new Error('OTP URL not found in server response');
             }
+            console.log('[API] OTP URL obtained successfully');
             return otpUrl;
         } catch (e: any) {
             console.error('[API] OTP Fetch Failed:', e.message);
@@ -570,7 +572,7 @@ class APIBase {
                     const subscription = activeApi?.send({
                         [streamName]: 1,
                         subscribe: 1,
-                        ...(streamName === 'balance' ? { account: 'all' } : {}),
+                        ...(streamName === 'balance' && API_MODE === 'legacy' ? { account: 'all' } : {}),
                     });
                     if (subscription && API_MODE === 'legacy') {
                         this.current_auth_subscriptions.push(subscription as SubscriptionPromise);

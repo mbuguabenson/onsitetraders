@@ -9,9 +9,9 @@ export const getApiMode = (): 'legacy' | 'new' => {
     // Priority 2: Existing legacy session
     if (localStorage.getItem('authToken')) return 'legacy';
     
-    // Default: 'new' OIDC PKCE flow — site is registered on Deriv Dashboard
-    // with redirect_uri https://<domain>/callback
-    return 'new';
+    // Default: 'legacy' flow because Deriv's new OIDC PKCE flow is restricted to internal clients
+    // and third-party devs cannot request 'read' scope via OIDC yet.
+    return 'legacy';
 };
 
 export const API_MODE = getApiMode();
@@ -260,7 +260,7 @@ const newGenerateOAuthURL = async (prompt?: string) => {
     // Store for callback
     storePKCEState(code_verifier, state);
     
-    let login_url = `${DERIV_NEW_AUTH_URL}?client_id=${client_id}&redirect_uri=${encodeURIComponent(redirect_uri)}&response_type=code&state=${state}&code_challenge=${code_challenge}&code_challenge_method=S256`;
+    let login_url = `${DERIV_NEW_AUTH_URL}?client_id=${client_id}&redirect_uri=${encodeURIComponent(redirect_uri)}&response_type=code&scope=trade&state=${state}&code_challenge=${code_challenge}&code_challenge_method=S256`;
 
     if (prompt) {
         login_url += `&prompt=${encodeURIComponent(prompt)}`;
@@ -272,11 +272,6 @@ const newGenerateOAuthURL = async (prompt?: string) => {
 
 
 export const generateOAuthURL = async (promptOrMode: string | undefined = API_MODE) => {
-    // If it looks like a prompt ('registration') and we are in new mode, use it as prompt
-    if (promptOrMode === 'registration' || promptOrMode === 'login') {
-        return newGenerateOAuthURL(promptOrMode);
-    }
-    
     if (promptOrMode === 'new') {
         return newGenerateOAuthURL();
     }

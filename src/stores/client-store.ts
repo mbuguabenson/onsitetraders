@@ -410,6 +410,21 @@ export default class ClientStore {
         this.is_logging_out = is_logging_out;
     };
 
+    checkAndRegenerateWebSocket = async () => {
+        const loginid = localStorage.getItem('active_loginid');
+        if (!loginid) return;
+
+        console.log('[ClientStore] Regenerating WebSocket for:', loginid);
+
+        // Update new API account ID if in new mode
+        if (localStorage.getItem('new_api_access_token')) {
+            localStorage.setItem('new_api_account_id', loginid);
+        }
+
+        // Re-initialize API base
+        await api_base.init(true);
+    };
+
     logout = async () => {
         // reset all the states
         this.account_list = [];

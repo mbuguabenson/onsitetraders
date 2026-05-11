@@ -58,6 +58,7 @@ export const AuthWrapper = () => {
                     const { validatePKCEState, popPKCEVerifier, clearPKCEVerifier } = await import('@/utils/pkce');
                     const { getClientId, DERIV_NEW_TOKEN_URL, getAppId, getRedirectUri } = await import('@/components/shared/utils/config/config');
                     
+                    if (validatePKCEState(state)) {
                         const verifier = popPKCEVerifier();
                         if (verifier) {
                             const redirect_uri = getRedirectUri();
@@ -139,6 +140,8 @@ export const AuthWrapper = () => {
                                 const errorData = await response.json().catch(() => ({}));
                                 console.error('[AuthWrapper] Token Exchange Error:', errorData);
                             }
+                        } else {
+                            console.error('[AuthWrapper] PKCE state mismatch or missing verifier');
                         }
                 }
 

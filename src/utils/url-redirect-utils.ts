@@ -1,4 +1,5 @@
 import { getInitialLanguage } from '@deriv-com/translations';
+import { getRedirectUri } from '@/components/shared/utils/config/config';
 
 /**
  * Appends the current app_id and language as query parameters to an internal
@@ -29,7 +30,6 @@ export const generateUrlWithRedirect = (path: string): string => {
         }
 
         // Append redirect URI so the destination can send the user back
-        const { getRedirectUri } = await import('@/components/shared/utils/config/config');
         url.searchParams.set('redirect_uri', getRedirectUri());
 
         return url.toString();
@@ -43,9 +43,4 @@ export const generateUrlWithRedirect = (path: string): string => {
  * Appends `redirect_uri` pointing back to the current origin's root page.
  * Useful when a standalone page needs to return the user to the trading bot.
  */
-export const generateRedirectUri = (): string => {
-    // Note: This is now a synchronous wrapper but the actual URI might be async in some apps.
-    // In this project config.ts getRedirectUri is sync.
-    const { getRedirectUri } = require('@/components/shared/utils/config/config');
-    return getRedirectUri();
-};
+export const generateRedirectUri = (): string => getRedirectUri();

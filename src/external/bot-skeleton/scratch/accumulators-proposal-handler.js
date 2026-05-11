@@ -6,7 +6,7 @@ export const DEFAULT_PROPOSAL_REQUEST = {
     basis: 'stake',
     contract_type: 'ACCU',
     currency: undefined,
-    symbol: undefined,
+    underlying_symbol: undefined,
     growth_rate: undefined,
     proposal: 1,
     subscribe: 1,
@@ -14,7 +14,7 @@ export const DEFAULT_PROPOSAL_REQUEST = {
 
 export const forgetAccumulatorsProposalRequest = async instance => {
     if (instance && !instance.is_bot_running) {
-        await api_base?.api?.send({ forget_all: 'proposal' });
+        await api_base?.api?.send({ forget_all: ['proposal'] });
         instance.subscription_id_for_accumulators = null;
         instance.is_proposal_requested_for_accumulators = false;
         window.Blockly.accumulators_request = {};
@@ -32,7 +32,7 @@ export const handleProposalRequestForAccumulators = instance => {
         ...DEFAULT_PROPOSAL_REQUEST,
         amount,
         currency,
-        symbol,
+        underlying_symbol: symbol,
         growth_rate,
     };
     window.Blockly.accumulators_request = proposal_request;
@@ -46,7 +46,7 @@ export const requestProposalForQS = (input_values, ws) => {
         ...DEFAULT_PROPOSAL_REQUEST,
         amount,
         currency,
-        symbol,
+        underlying_symbol: symbol,
         growth_rate,
         subscribe: undefined,
         limit_order: {

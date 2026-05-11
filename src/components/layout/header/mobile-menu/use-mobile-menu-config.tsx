@@ -1,9 +1,8 @@
 import { ComponentProps, ReactNode, useMemo } from 'react';
 import useThemeSwitcher from '@/hooks/useThemeSwitcher';
 import RootStore from '@/stores/root-store';
-import { LegacyLogout1pxIcon, LegacyTheme1pxIcon } from '@deriv/quill-icons/Legacy';
+import { LegacyLogout1pxIcon, LegacyThemeDarkIcon, LegacyThemeLightIcon } from '@deriv/quill-icons/Legacy';
 import { useTranslations } from '@deriv-com/translations';
-import { ToggleSwitch } from '@deriv-com/ui';
 
 export type TSubmenuSection = 'accountSettings' | 'cashier' | 'reports';
 
@@ -50,12 +49,20 @@ const useMobileMenuConfig = (
                 // For desktop menu items, see:
                 // src/components/layout/header/header-config.tsx
 
-                // Conditionally include theme toggle based on brand config
+                // Conditionally include theme switchers based on brand config
+                enableThemeToggle && {
+                    as: 'button',
+                    label: localize('Light theme'),
+                    LeftComponent: LegacyThemeLightIcon,
+                    onClick: () => is_dark_mode_on && toggleTheme(),
+                    isActive: !is_dark_mode_on,
+                },
                 enableThemeToggle && {
                     as: 'button',
                     label: localize('Dark theme'),
-                    LeftComponent: LegacyTheme1pxIcon,
-                    RightComponent: <ToggleSwitch value={is_dark_mode_on} onChange={toggleTheme} />,
+                    LeftComponent: LegacyThemeDarkIcon,
+                    onClick: () => !is_dark_mode_on && toggleTheme(),
+                    isActive: is_dark_mode_on,
                 },
             ].filter(Boolean) as TMenuConfig,
             [

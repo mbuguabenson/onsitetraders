@@ -88,6 +88,14 @@ class APIBase {
     max_reconnect_attempts = 5;
     reconnect_timeout: ReturnType<typeof setTimeout> | null = null;
     ping_interval: ReturnType<typeof setInterval> | null = null;
+    
+    constructor() {
+        const cached_loginid = localStorage.getItem('active_loginid') || localStorage.getItem('new_api_account_id');
+        if (cached_loginid) {
+            this.account_id = cached_loginid;
+            this.account_info = { loginid: cached_loginid };
+        }
+    }
 
     unsubscribeAllSubscriptions = () => {
         const activeApi = this.api;
@@ -158,13 +166,12 @@ class APIBase {
                 this._legacyApi.connection.removeEventListener('close', this.onsocketclose.bind(this));
             }
 
-            this._legacyApi = generateDerivApiInstance();
-            // Patch legacy API with forget methods if they don't exist
-            if (this._legacyApi && !this._legacyApi.forget) {
-                (this._legacyApi as any).forget = (id: string) => this._legacyApi?.send({ forget: id });
-                (this._legacyApi as any).forgetAll = (types: string | string[]) => 
-                    this._legacyApi?.send({ forget_all: Array.isArray(types) ? types : [types] });
-            }
+            const raw_legacy_api = generateDerivApiInstance();
+            this._legacyApi = this.wrapSocket(raw_legacy_api.connection);
+            
+            // Re-add DerivAPI specific helpers to the wrapped object if needed
+            // But wrapSocket already provides send, authorize, buy, etc.
+            
             this._legacyApi?.connection.addEventListener('open', this.onsocketopen.bind(this));
             this._legacyApi?.connection.addEventListener('close', this.onsocketclose.bind(this));
         }

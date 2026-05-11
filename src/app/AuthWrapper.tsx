@@ -153,7 +153,13 @@ export const AuthWrapper = () => {
                 const new_account_id = localStorage.getItem('new_api_account_id');
                 
                 if (new_token && new_account_id) {
-                    console.log('[AuthWrapper] New API session detected, pre-fetching accounts...');
+                    console.log('[AuthWrapper] New API session detected, checking for cached accounts...');
+                    
+                    const cachedAccounts = localStorage.getItem('new_api_accounts_list');
+                    if (cachedAccounts) {
+                        console.log('[AuthWrapper] Using cached accounts for immediate login');
+                        setIsAuthComplete(true);
+                    }
                     
                     try {
                         const { getAppId } = await import('@/components/shared/utils/config/config');

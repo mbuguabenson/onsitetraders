@@ -163,14 +163,6 @@ const AppHeader = observer(({ isAuthenticating: isInitialAuthenticating }: { isA
                             >
                                 <Localize i18n_default_text='Transfer' />
                             </Button>
-                            <Button
-                                secondary
-                                disabled={client?.is_logging_out}
-                                onClick={handleLogout}
-                                id='header-logout-btn'
-                            >
-                                <Localize i18n_default_text='Logout' />
-                            </Button>
                         </div>
                     );
                 }

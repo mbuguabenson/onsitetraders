@@ -84,7 +84,7 @@ export default Engine =>
                     ).then(onSuccess);
                 }
                 const trade_option = tradeOptionToBuy(contract_type, this.tradeOptions);
-                const action = () => api_base.api.send(trade_option);
+                const action = () => api_base.api.send({ ...trade_option, subscribe: 1 });
 
                 this.isSold = false;
 

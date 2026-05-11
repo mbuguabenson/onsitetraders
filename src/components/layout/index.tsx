@@ -11,6 +11,7 @@ import useTMB from '@/hooks/useTMB';
 import { 
     crypto_currencies_display_order, 
     fiat_currencies_display_order, 
+    generateOAuthURL,
 } from '../shared';
 import { API_MODE } from '../shared/utils/config/config';
 import { useDevice } from '@deriv-com/ui';
@@ -92,7 +93,6 @@ const Layout = observer(() => {
 
                 // Skip disabled accounts when checking for missing currency
                 const accounts = api_accounts.current.flat();
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 const hasMissingCurrency = accounts.some(data => {
                     if (!allCurrencies.has(data.currency)) {
@@ -196,9 +196,8 @@ const Layout = observer(() => {
                 if (tmbEnabled) {
                     await onRenderTMBCheck();
                 } else if (shouldAuthenticate) {
-                    // isRedirecting.current = true;
-                    // window.location.assign(await generateOAuthURL());
-                    console.log('[Layout] Autologin suppressed. User must log in manually via Header.');
+                    isRedirecting.current = true;
+                    window.location.assign(await generateOAuthURL());
                 }
             } catch (err) {
                 // eslint-disable-next-line no-console

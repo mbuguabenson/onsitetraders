@@ -249,7 +249,8 @@ export default class DigitCrackerStore {
         if (!this.symbol || this.is_subscribing) return;
 
         try {
-            if (!api_base.api) {
+            const market_api = api_base.marketApi || api_base.api;
+            if (!market_api) {
                 throw new Error('API not initialized');
             }
 
@@ -273,7 +274,6 @@ export default class DigitCrackerStore {
             const safeCount = Math.min(this.total_ticks || 5000, 5000);
 
             let response: any;
-            const market_api = api_base.marketApi || api_base.api;
             try {
                 response = await market_api?.send({
                     ticks_history: this.symbol,

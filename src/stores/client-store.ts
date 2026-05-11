@@ -67,6 +67,35 @@ export default class ClientStore {
     };
 
     constructor() {
+        // Load initial state from localStorage for immediate display
+        const cached_loginid = localStorage.getItem('active_loginid');
+        if (cached_loginid) {
+            this.setLoginId(cached_loginid);
+            this.setIsLoggedIn(true);
+            
+            try {
+                const client_accounts = JSON.parse(localStorage.getItem('clientAccounts') || '{}');
+                const active_account = client_accounts[cached_loginid];
+                if (active_account) {
+                    this.setBalance(String(active_account.balance || 0));
+                    this.setCurrency(active_account.currency || 'USD');
+                }
+                
+                const account_list_json = localStorage.getItem('accountsList');
+                if (account_list_json) {
+                    const parsed_list = JSON.parse(account_list_json);
+                    const formatted_list = Object.keys(parsed_list).map(id => ({
+                        loginid: id,
+                        currency: client_accounts[id]?.currency || 'USD',
+                        is_virtual: id.startsWith('VR') ? 1 : 0
+                    }));
+                    this.setAccountList(formatted_list as any);
+                }
+            } catch (e) {
+                console.warn('[ClientStore] Failed to load initial cached state:', e);
+            }
+        }
+
         authData$.subscribe(authData => {
             if (authData) {
                 console.log('[ClientStore] Syncing authData:', {

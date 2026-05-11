@@ -542,7 +542,7 @@ export default class FreeBotsStore {
                 currency: this.root_store.client?.currency || 'USD',
                 duration: cfg.ticks,
                 duration_unit: 't',
-                symbol: this.symbol,
+                underlying_symbol: this.symbol,
             };
             if (!['DIGITEVEN', 'DIGITODD'].includes(contract_type)) {
                 proposal_data.barrier = String(prediction);

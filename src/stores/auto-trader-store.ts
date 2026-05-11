@@ -533,7 +533,7 @@ export default class AutoTraderStore {
                 currency: this.root_store.client?.currency || 'USD',
                 duration: 1,
                 duration_unit: 't',
-                symbol: this.symbol,
+                underlying_symbol: this.symbol,
                 ...(barrier ? { barrier } : {}),
             });
 
@@ -722,7 +722,7 @@ export default class AutoTraderStore {
                 currency: this.root_store.client?.currency || 'USD',
                 duration: 1,
                 duration_unit: 't',
-                symbol: this.symbol,
+                underlying_symbol: this.symbol,
                 barrier,
             });
 

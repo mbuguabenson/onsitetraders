@@ -1198,7 +1198,7 @@ export default class SmartTradingStore {
                     currency: this.root_store.client.currency || 'USD',
                     duration: 1,
                     duration_unit: 't',
-                    symbol: this.symbol,
+                    underlying_symbol: this.symbol,
                     ...(trade.barrier !== undefined && { barrier: trade.barrier }),
                 };
 
@@ -1428,7 +1428,7 @@ export default class SmartTradingStore {
                 currency: this.root_store.client.currency || 'USD',
                 duration: 1,
                 duration_unit: 't',
-                symbol,
+                underlying_symbol: symbol,
             };
 
             if (barrier !== undefined) {
@@ -2046,7 +2046,7 @@ export default class SmartTradingStore {
                     currency: this.root_store.client.currency || 'USD',
                     duration: strategy.ticks,
                     duration_unit: 't',
-                    symbol: this.symbol,
+                    underlying_symbol: this.symbol,
                     ...(['DIGITOVER', 'DIGITUNDER', 'DIGITMATCH', 'DIGITDIFF'].includes(trade_type || '') &&
                     prediction !== undefined
                         ? { barrier: String(prediction) }
@@ -2186,7 +2186,7 @@ export default class SmartTradingStore {
                 currency: this.root_store.client.currency || 'USD',
                 duration: 1,
                 duration_unit: 't',
-                symbol,
+                underlying_symbol: symbol,
             };
 
             if (prediction !== undefined) {
@@ -2500,7 +2500,7 @@ export default class SmartTradingStore {
                 currency: this.root_store.client.currency || 'USD',
                 duration,
                 duration_unit: 't',
-                symbol: this.symbol,
+                underlying_symbol: this.symbol,
                 ...(prediction !== undefined ? { barrier: String(prediction) } : {}),
             });
 
@@ -2765,7 +2765,7 @@ export default class SmartTradingStore {
                 currency: this.root_store.client.currency || 'USD',
                 duration: 1,
                 duration_unit: 't',
-                symbol: this.symbol,
+                underlying_symbol: this.symbol,
                 ...(trade.prediction !== undefined ? { barrier: String(trade.prediction) } : {}),
             });
 
@@ -3036,7 +3036,7 @@ export default class SmartTradingStore {
                 currency: this.root_store.client.currency || 'USD',
                 duration: 1,
                 duration_unit: 't',
-                symbol: config.market,
+                underlying_symbol: config.market,
                 ...(prediction !== undefined ? { barrier: String(prediction) } : {}),
             });
 
@@ -3190,7 +3190,7 @@ export default class SmartTradingStore {
                 currency: this.root_store.client.currency || 'USD',
                 duration: 1,
                 duration_unit: 't',
-                symbol: this.bulk_market,
+                underlying_symbol: this.bulk_market,
                 ...(barrier !== undefined ? { barrier } : {}),
             });
 

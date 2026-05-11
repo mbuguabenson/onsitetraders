@@ -565,7 +565,7 @@ export default class SmartAutoStore {
                 currency: this.root_store.client.currency || 'USD',
                 duration: config.ticks,
                 duration_unit: 't',
-                symbol: this.root_store.analysis.symbol,
+                underlying_symbol: this.root_store.analysis.symbol,
                 ...(contract_type.includes('DIGIT')
                     ? contract_type.includes('EVEN') || contract_type.includes('ODD')
                         ? {}

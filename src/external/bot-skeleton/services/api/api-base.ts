@@ -432,6 +432,8 @@ class APIBase {
             proposalOpenContract: (data: any) => send({ proposal_open_contract: 1, ...data }),
             sell: (id: string, price: number) => send({ sell: id, price }),
             transaction: () => send({ transaction: 1, subscribe: 1 }),
+            forget: (id: string) => send({ forget: id }),
+            forgetAll: (types: string | string[]) => send({ forget_all: Array.isArray(types) ? types : [types] }),
         } as any;
     }
 

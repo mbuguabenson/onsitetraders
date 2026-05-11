@@ -141,8 +141,11 @@ export const AuthWrapper = () => {
                                 console.error('[AuthWrapper] Token Exchange Error:', errorData);
                             }
                         } else {
-                            console.error('[AuthWrapper] PKCE state mismatch or missing verifier');
+                            console.error('[AuthWrapper] PKCE verifier missing');
                         }
+                    } else {
+                        console.error('[AuthWrapper] PKCE state mismatch');
+                    }
                 }
 
                 // 2. Check for existing New API (OIDC) tokens
@@ -156,7 +159,7 @@ export const AuthWrapper = () => {
                 }
 
                 // 3. Fallback to Legacy tokens
-                if (loginInfo.length) {
+                if (loginInfo && loginInfo.length > 0) {
                     await setLocalStorageToken(loginInfo, paramsToDelete);
                 }
                 

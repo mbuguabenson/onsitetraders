@@ -270,7 +270,7 @@ export default class AppStore {
                 if (!is_socket_opened) return;
                 this.api_helpers_store = {
                     server_time: this.root_store.common.server_time,
-                    ws: api_base.api,
+                    ws: api_base.marketApi,
                     ticks_service: (ApiHelpers?.instance as any)?.ticks_service,
                 };
 
@@ -355,16 +355,16 @@ export default class AppStore {
         } as any;
 
         // Initialize ApiHelpers if not already done
-        if (!ApiHelpers.instance && api_base.api) {
+        if (!ApiHelpers.instance && api_base.marketApi) {
             ApiHelpers.setInstance({
                 server_time: common.server_time,
-                ws: api_base.api,
+                ws: api_base.marketApi,
             });
         }
 
         this.api_helpers_store = {
             server_time: common.server_time,
-            ws: api_base.api,
+            ws: api_base.marketApi,
             ticks_service: (ApiHelpers.instance as any)?.ticks_service,
         };
     };

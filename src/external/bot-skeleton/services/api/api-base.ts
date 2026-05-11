@@ -52,7 +52,7 @@ class APIBase {
     // Returns the API for TRADING operations (balance, buy, proposal_open_contract)
     get api(): TApiBaseApi | null {
         if (API_MODE === 'new') {
-            return this.tradingApi || this.publicApi;
+            return this.tradingApi;
         }
         return this._legacyApi;
     }
@@ -159,6 +159,12 @@ class APIBase {
             }
 
             this._legacyApi = generateDerivApiInstance();
+            // Patch legacy API with forget methods if they don't exist
+            if (this._legacyApi && !this._legacyApi.forget) {
+                (this._legacyApi as any).forget = (id: string) => this._legacyApi?.send({ forget: id });
+                (this._legacyApi as any).forgetAll = (types: string | string[]) => 
+                    this._legacyApi?.send({ forget_all: Array.isArray(types) ? types : [types] });
+            }
             this._legacyApi?.connection.addEventListener('open', this.onsocketopen.bind(this));
             this._legacyApi?.connection.addEventListener('close', this.onsocketclose.bind(this));
         }
@@ -172,7 +178,7 @@ class APIBase {
         if (this.time_interval) clearInterval(this.time_interval);
         this.time_interval = null;
 
-        if (V2GetActiveToken()) {
+        if (V2GetActiveToken() && API_MODE !== 'new') {
             setIsAuthorizing(true);
             await this.authorizeAndSubscribe();
         }
@@ -199,9 +205,8 @@ class APIBase {
 
             this.publicApi?.connection.addEventListener('open', () => {
                 console.log('[API] Public WebSocket Connected (v3 market data)');
-                this.onsocketopen();
-                // Fetch active symbols immediately so the bot builder
-                // can populate its symbol list across all tabs
+                // If we are in 'new' mode, we don't send 'authorize' here.
+                // We just need active symbols.
                 this.getActiveSymbols();
             });
             this.publicApi?.connection.addEventListener('close', () => {
@@ -427,7 +432,7 @@ class APIBase {
             getSettings: () => send({ get_settings: 1 }),
             setSettings: (data: any) => send({ set_settings: 1, ...data }),
             tncApproval: () => send({ tnc_approval: 1 }),
-            buy: (id: string, price: number) => send({ buy: id, price }),
+            buy: (id: string, price: number) => send({ buy: id, price, subscribe: 1 }),
             proposal: (data: any) => send({ proposal: 1, ...data }),
             proposalOpenContract: (data: any) => send({ proposal_open_contract: 1, ...data }),
             sell: (id: string, price: number) => send({ sell: id, price }),
@@ -596,6 +601,7 @@ class APIBase {
     async subscribe() {
         const subscribeToStream = (streamName: string) => {
             const activeApi = API_MODE === 'new' ? this.tradingApi : this.api;
+            if (!activeApi) return Promise.resolve();
             
             return doUntilDone(
                 () => {
@@ -621,13 +627,12 @@ class APIBase {
     }
 
     getActiveSymbols = async () => {
-        const isNew = API_MODE === 'new';
-        // Always use the public/market-data socket for active_symbols so it
+        // Always use the marketApi (public socket) for active_symbols so it
         // works before the user logs in and on every tab simultaneously.
-        let activeApi = isNew ? this.publicApi : this.api;
+        let activeApi = this.marketApi;
 
         // Robust wait for public API initialization
-        if (isNew && !activeApi) {
+        if (API_MODE === 'new' && !activeApi) {
             for (let i = 0; i < 50; i++) {
                 await new Promise(r => setTimeout(r, 200));
                 activeApi = this.publicApi;

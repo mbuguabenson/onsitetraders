@@ -417,8 +417,9 @@ export default class AnalysisStore {
             }
 
             let response: any;
+            const market_api = api_base.marketApi || api_base.api;
             try {
-                response = await api_base.api.send({
+                response = await market_api?.send({
                     ticks_history: this.symbol,
                     count: safeCount,
                     end: 'latest',
@@ -428,7 +429,7 @@ export default class AnalysisStore {
 
                 if (response?.error?.code === 'AlreadySubscribed') {
                     // If already subscribed, just fetch history once and reuse the existing global listener logic
-                    response = await api_base.api.send({
+                    response = await market_api?.send({
                         ticks_history: this.symbol,
                         count: safeCount,
                         end: 'latest',
@@ -439,7 +440,7 @@ export default class AnalysisStore {
                 }
             } catch (err: any) {
                 if (err.error?.code === 'AlreadySubscribed') {
-                    response = await api_base.api.send({
+                    response = await market_api?.send({
                         ticks_history: this.symbol,
                         count: safeCount,
                         end: 'latest',
@@ -479,7 +480,7 @@ export default class AnalysisStore {
             if (this.unsubscribe_ticks) this.unsubscribe_ticks();
 
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const subscription = api_base.api.onMessage().subscribe((msg: any) => {
+            const subscription = market_api?.onMessage().subscribe((msg: any) => {
                 const data = msg.data || msg;
                 if (data.msg_type === 'tick' && data.tick && data.tick.symbol === this.symbol) {
                     this.handleTick(data.tick);
@@ -563,8 +564,9 @@ export default class AnalysisStore {
     fetchMarkets = async () => {
         let symbols: any[] = [];
         try {
-            if (api_base.api) {
-                const response = await api_base.api.send({ active_symbols: 'brief' });
+            const market_api = api_base.marketApi || api_base.api;
+            if (market_api) {
+                const response = await market_api.send({ active_symbols: 'brief' });
                 if (response.active_symbols && response.active_symbols.length > 0) {
                     symbols = response.active_symbols;
                 }

@@ -48,7 +48,7 @@ export default Engine =>
                 if (this.is_proposal_subscription_required) {
                     const { id, askPrice } = this.selectProposal(contract_type);
 
-                    const action = () => api_base.api.send({ buy: id, price: askPrice });
+                    const action = () => api_base.api.send({ buy: id, price: askPrice, subscribe: 1 });
 
                     this.isSold = false;
 

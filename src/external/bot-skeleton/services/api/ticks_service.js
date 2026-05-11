@@ -219,8 +219,8 @@ export default class TicksService {
     }
 
     observe() {
-        if (api_base.api && !this.messageSubscription) {
-            this.messageSubscription = api_base.api.onMessage().subscribe(({ data }) => {
+        if (api_base.marketApi && !this.messageSubscription) {
+            this.messageSubscription = api_base.marketApi.onMessage().subscribe(({ data }) => {
                 if (data.error) {
                     if (data.error.code !== 'AlreadySubscribed') {
                         console.error('[TicksService] API error:', data.error.message || data.error);
@@ -298,8 +298,8 @@ export default class TicksService {
             style,
         };
         return new Promise((resolve, reject) => {
-            if (!api_base.api) resolve([]);
-            doUntilDone(() => api_base.api.send(request_object), [], api_base)
+            if (!api_base.marketApi) resolve([]);
+            doUntilDone(() => api_base.marketApi.send(request_object), [], api_base)
                 .then(r => {
                     if (style === 'ticks') {
                         const ticks = historyToTicks(r.history);
@@ -335,7 +335,7 @@ export default class TicksService {
         const tickSubscriptions = this.subscriptions.get('tick');
         const ids = tickSubscriptions ? Array.from(tickSubscriptions.values()) : [];
 
-        return Promise.all(ids.map(id => id && doUntilDone(() => api_base.api.forget(id)))).then(() => {
+        return Promise.all(ids.map(id => id && doUntilDone(() => api_base.marketApi.forget(id)))).then(() => {
             this.subscriptions = this.subscriptions.delete('tick');
         });
     };
@@ -349,7 +349,7 @@ export default class TicksService {
             });
         }
 
-        return Promise.all(ids.map(id => id && doUntilDone(() => api_base.api.forget(id)))).then(() => {
+        return Promise.all(ids.map(id => id && doUntilDone(() => api_base.marketApi.forget(id)))).then(() => {
             this.subscriptions = this.subscriptions.delete('ohlc');
         });
     };

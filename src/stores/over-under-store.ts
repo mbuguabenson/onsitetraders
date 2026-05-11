@@ -142,7 +142,8 @@ export default class OverUnderStore {
             });
 
             // Start real-time stream
-            api_base.api.send({ ticks: this.symbol, subscribe: 1 });
+            const market_api = api_base.marketApi || api_base.api;
+            market_api?.send({ ticks: this.symbol, subscribe: 1 });
 
             // Initial historical data
             api_base.api.send({

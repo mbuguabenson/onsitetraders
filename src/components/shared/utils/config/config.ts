@@ -272,7 +272,8 @@ const newGenerateOAuthURL = async (prompt?: string) => {
     // Store for callback
     storePKCEState(code_verifier, state);
     
-    let login_url = `${DERIV_NEW_AUTH_URL}?client_id=${client_id}&redirect_uri=${encodeURIComponent(redirect_uri)}&response_type=code&scope=trade&state=${state}&code_challenge=${code_challenge}&code_challenge_method=S256`;
+    const app_id = getAppId();
+    let login_url = `${DERIV_NEW_AUTH_URL}?client_id=${client_id}&redirect_uri=${encodeURIComponent(redirect_uri)}&response_type=code&scope=trade+account_manage&state=${state}&code_challenge=${code_challenge}&code_challenge_method=S256&app_id=${app_id}`;
 
     if (prompt) {
         login_url += `&prompt=${encodeURIComponent(prompt)}`;

@@ -273,8 +273,9 @@ export default class DigitCrackerStore {
             const safeCount = Math.min(this.total_ticks || 5000, 5000);
 
             let response: any;
+            const market_api = api_base.marketApi || api_base.api;
             try {
-                response = await api_base.api.send({
+                response = await market_api?.send({
                     ticks_history: this.symbol,
                     count: safeCount,
                     end: 'latest',
@@ -333,7 +334,7 @@ export default class DigitCrackerStore {
 
             // Setup real-time listener
             console.log(`[DigitCrackerStore] Attempting to hook into onMessage for ${this.symbol}`);
-            const subscription = api_base.api.onMessage().subscribe((msg: any) => {
+            const subscription = market_api?.onMessage().subscribe((msg: any) => {
                 const data = msg.data || msg;
                 if (data.msg_type === 'tick') {
                     // console.log(`[DigitCrackerStore] Raw msg tick for ${data.tick?.symbol}`);

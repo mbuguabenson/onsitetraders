@@ -134,6 +134,7 @@ export default class MarketkillerStore {
             buyRes = await api_base.api.send({
                 buy: '1',
                 price: safeStake,
+                subscribe: 1,
                 parameters: {
                     amount: safeStake,
                     basis: 'stake',
@@ -141,7 +142,7 @@ export default class MarketkillerStore {
                     currency: 'USD',
                     duration: this.matches_settings.duration || 1,
                     duration_unit: 't',
-                    symbol: config.symbol,
+                    underlying_symbol: config.symbol,
                     barrier: String(config.barrier),
                 },
             });
@@ -267,7 +268,8 @@ export default class MarketkillerStore {
         try {
             console.log('[Marketkiller] Subscribing to ticks for:', this.symbol);
             const req = { ticks: this.symbol, subscribe: 1 };
-            const response = await api_base.api.send(req);
+            const market_api = api_base.marketApi || api_base.api;
+            const response = await market_api?.send(req);
 
             if (response.error) {
                 console.error('[Marketkiller] Tick Subscription failed:', response.error);
@@ -278,8 +280,8 @@ export default class MarketkillerStore {
             this.tick_subscription = response.subscription?.id || response.tick?.id;
 
             // Register fresh RxJS event listener for the tick stream
-            if (api_base.api.onMessage) {
-                this.tick_listener_sub = api_base.api.onMessage().subscribe((res: any) => {
+            if (market_api?.onMessage) {
+                this.tick_listener_sub = market_api.onMessage().subscribe((res: any) => {
                     if (res?.data?.msg_type === 'tick' && res?.data?.tick?.symbol === this.symbol) {
                         this.onTickArrival(res.data.tick);
                     }
@@ -294,7 +296,8 @@ export default class MarketkillerStore {
     private subscribeToRibbon = async () => {
         this.live_market_ribbon.forEach(async m => {
             try {
-                const response = await api_base.api.send({ ticks: m.symbol, subscribe: 1 });
+                const market_api = api_base.marketApi || api_base.api;
+                const response = await market_api?.send({ ticks: m.symbol, subscribe: 1 });
                 if (response.subscription) {
                     this.ribbon_subscriptions.set(m.symbol, response.subscription.id);
                 }
@@ -303,7 +306,8 @@ export default class MarketkillerStore {
             }
         });
 
-        api_base.api.onMessage().subscribe((res: any) => {
+        const market_api = api_base.marketApi || api_base.api;
+        market_api?.onMessage().subscribe((res: any) => {
             if (res?.data?.msg_type === 'tick' && res?.data?.tick) {
                 const tick = res.data.tick;
                 const index = this.live_market_ribbon.findIndex(m => m?.symbol === tick.symbol);
@@ -565,6 +569,7 @@ export default class MarketkillerStore {
             return api_base.api.send({
                 buy: '1',
                 price: safeStake,
+                subscribe: 1,
                 parameters: {
                     amount: safeStake,
                     basis: 'stake',
@@ -572,7 +577,7 @@ export default class MarketkillerStore {
                     currency: 'USD',
                     duration: this.matches_settings.duration || 1,
                     duration_unit: 't',
-                    symbol: config.symbol,
+                    underlying_symbol: config.symbol,
                     barrier: String(config.barrier),
                 },
             });

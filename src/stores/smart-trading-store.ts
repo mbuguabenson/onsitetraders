@@ -940,13 +940,14 @@ export default class SmartTradingStore {
         if (!this.symbol || !this.is_connected) return;
 
         try {
-            if (!api_base.api) {
+            const market_api = api_base.marketApi || api_base.api;
+            if (!market_api) {
                 throw new Error('API not initialized');
             }
 
             let response: any;
             try {
-                response = await api_base.api.send({
+                response = await market_api.send({
                     ticks_history: this.symbol,
                     count: 1000,
                     end: 'latest',
@@ -956,7 +957,7 @@ export default class SmartTradingStore {
             } catch (err: any) {
                 if (err.error?.code === 'AlreadySubscribed') {
                     // Fallback: fetch history without subscribing
-                    response = await api_base.api.send({
+                    response = await market_api.send({
                         ticks_history: this.symbol,
                         count: 1000,
                         end: 'latest',
@@ -988,7 +989,7 @@ export default class SmartTradingStore {
             }
 
             // Setup real-time listener
-            const subscription = api_base.api.onMessage().subscribe((msg: any) => {
+            const subscription = market_api?.onMessage().subscribe((msg: any) => {
                 if (msg.msg_type === 'tick' && msg.tick && msg.tick.symbol === this.symbol) {
                     const quote = msg.tick.quote;
                     const price_str = String(quote);
@@ -1409,15 +1410,15 @@ export default class SmartTradingStore {
             if (!api_base.api) return;
 
             type TProposalRequest = {
-                proposal: number;
+                proposal: 1;
                 amount: number;
-                basis: string;
+                basis: 'stake';
                 contract_type: string;
                 currency: string;
                 duration: number;
                 duration_unit: string;
-                symbol: string;
-                barrier?: number;
+                underlying_symbol: string;
+                barrier?: number | string;
             };
 
             const proposal_request: TProposalRequest = {
@@ -1452,6 +1453,7 @@ export default class SmartTradingStore {
             const buy_response = await api_base.api.send({
                 buy: proposal_id,
                 price: stake,
+                subscribe: 1,
             });
 
             if (buy_response.error) {
@@ -2068,6 +2070,7 @@ export default class SmartTradingStore {
                 api_base.api.send({
                     buy: proposal.proposal.id,
                     price: strategy.current_stake,
+                    subscribe: 1,
                 }),
                 timeoutPromise(10000, 'Buy timed out'),
             ]);
@@ -2206,6 +2209,7 @@ export default class SmartTradingStore {
             const buy_response = await api_base.api.send({
                 buy: proposal_id,
                 price: stake,
+                subscribe: 1,
             });
 
             if (buy_response.error) {
@@ -2509,6 +2513,7 @@ export default class SmartTradingStore {
             const buy = await api_base.api.send({
                 buy: proposal.proposal.id,
                 price: stake,
+                subscribe: 1,
             });
 
             if (buy.error) return;
@@ -2777,6 +2782,7 @@ export default class SmartTradingStore {
             const buy = await api_base.api.send({
                 buy: proposal.proposal.id,
                 price: stake,
+                subscribe: 1,
             });
 
             if (buy.error) {
@@ -3062,7 +3068,8 @@ export default class SmartTradingStore {
 
             const contract_id = buy.buy.contract_id;
 
-            const subscription = api_base.api.onMessage().subscribe((msg: any) => {
+            const market_api = api_base.marketApi || api_base.api;
+            const subscription = market_api?.onMessage().subscribe((msg: any) => {
                 if (
                     msg.msg_type === 'proposal_open_contract' &&
                     msg.proposal_open_contract.contract_id === contract_id
@@ -3202,6 +3209,7 @@ export default class SmartTradingStore {
             const buy = await api_base.api.send({
                 buy: proposal.proposal.id,
                 price: this.bulk_stake,
+                subscribe: 1,
             });
 
             if (buy.error) {
@@ -3278,7 +3286,7 @@ export default class SmartTradingStore {
                     currency: this.root_store.client.currency || 'USD',
                     duration: 1,
                     duration_unit: 't',
-                    symbol,
+                    underlying_symbol: symbol,
                     ...(barrier !== undefined ? { barrier: String(barrier) } : {}),
                 };
 
@@ -3302,7 +3310,8 @@ export default class SmartTradingStore {
                 this.addLog(`Trade executed: ${contract_type} on ${symbol}`);
 
                 const contract_id = buy_response.buy.contract_id;
-                const subscription = api_base.api.onMessage().subscribe((msg: any) => {
+                const market_api = api_base.marketApi || api_base.api;
+            const subscription = market_api?.onMessage().subscribe((msg: any) => {
                     if (
                         msg.msg_type === 'proposal_open_contract' &&
                         msg.proposal_open_contract.contract_id === contract_id

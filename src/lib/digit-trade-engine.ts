@@ -459,7 +459,7 @@ export class DigitTradeEngine {
                 currency,
                 duration: 1,
                 duration_unit: 't',
-                symbol,
+                underlying_symbol: symbol,
             };
 
             // Add barrier for digit contracts that require it
@@ -479,7 +479,7 @@ export class DigitTradeEngine {
 
             if (proposal.error) {
                 const errorMsg = `Proposal error: ${proposal.error.message} (${proposal.error.code})`;
-                this.addLog('ERROR', errorMsg);
+                this.addLog(errorMsg, 'error');
                 throw new Error(errorMsg);
             }
             if (!proposal.proposal?.id) throw new Error('No proposal ID returned from server');

@@ -1,4 +1,5 @@
 import { isProduction } from '@/components/shared';
+import { getAppId } from '@/components/shared/utils/config/config';
 import brandConfig from '../../brand.config.json';
 
 /**
@@ -135,6 +136,7 @@ export class DerivWSAccountsService {
                     method: 'GET',
                     headers: {
                         Authorization: `Bearer ${accessToken}`,
+                        'Deriv-App-Id': String(getAppId())
                     },
                 });
 
@@ -199,6 +201,7 @@ export class DerivWSAccountsService {
                     method: 'POST',
                     headers: {
                         Authorization: `Bearer ${accessToken}`,
+                        'Deriv-App-Id': String(getAppId())
                     },
                 });
 

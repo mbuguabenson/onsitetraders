@@ -1,4 +1,5 @@
 import { clearCodeVerifier, getCodeVerifier, isProduction } from '@/components/shared';
+import { getClientId, getRedirectUri } from '@/components/shared/utils/config/config';
 import { ErrorLogger } from '@/utils/error-logger';
 import brandConfig from '../../brand.config.json';
 
@@ -133,18 +134,16 @@ export class OAuthTokenExchangeService {
             // - client_id: your OAuth2 client ID
             // - code_verifier: the PKCE code verifier (proves we initiated the auth flow)
 
-            const clientId = process.env.CLIENT_ID;
+            const clientId = getClientId();
             if (!clientId) {
-                ErrorLogger.error('OAuth', 'CLIENT_ID environment variable is not set');
+                ErrorLogger.error('OAuth', 'CLIENT_ID is not configured');
                 return {
                     error: 'invalid_client',
-                    error_description: 'CLIENT_ID is not configured. Please set the CLIENT_ID environment variable.',
+                    error_description: 'CLIENT_ID is not configured. Please check your configuration.',
                 };
             }
 
-            const protocol = window.location.protocol;
-            const host = window.location.host;
-            const redirectUrl = `${protocol}//${host}`;
+            const redirectUrl = getRedirectUri();
 
             const requestBody = new URLSearchParams({
                 grant_type: 'authorization_code',
